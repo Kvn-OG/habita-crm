@@ -51,6 +51,7 @@ function translateAuthError(message: string) {
   if (/same.*password|different from the old/i.test(message)) return 'A nova senha deve ser diferente da senha atual.'
   if (/password should be at least|weak/i.test(message)) return 'A senha não atende aos requisitos mínimos de segurança.'
   if (/failed to fetch|network/i.test(message)) return 'Falha de conexão. Verifique sua internet e tente novamente.'
+  if (/error sending .*email|http 50[24]|timed? ?out/i.test(message)) return 'Não foi possível enviar o e-mail agora. Tente novamente mais tarde ou fale com o administrador.'
   if (/auth session missing|session.*expired|invalid.*(token|otp)|otp.*expired/i.test(message)) {
     return 'O link expirou ou já foi utilizado. Solicite uma nova redefinição de senha.'
   }

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { LogIn } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/feedback/Alert'
 import { TextField } from '@/components/forms/inputs'
 import { Button } from '@/components/ui/Button'
@@ -74,8 +74,11 @@ export function LoginPage() {
             error={formState.errors.password?.message}
             {...register('password')}
           />
-          {/* Sem SMTP próprio o Supabase não envia e-mails aos usuários: a senha é redefinida pelo administrador (Configurações → Equipe). */}
-          <p className="mt-2 text-right text-xs text-muted">Esqueceu a senha? Fale com o administrador da imobiliária.</p>
+          <div className="mt-2 text-right">
+            <Link to="/recuperar-senha" className="text-xs font-medium text-brand-800 underline-offset-2 hover:underline">
+              Esqueci minha senha
+            </Link>
+          </div>
         </div>
         <Button type="submit" className="w-full" loading={formState.isSubmitting} icon={<LogIn />}>
           Entrar

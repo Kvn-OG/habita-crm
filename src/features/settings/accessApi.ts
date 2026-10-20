@@ -5,8 +5,7 @@ export type CreateAccessInput = {
   email: string
   full_name: string
   role: AppRole
-  mode: 'password' | 'invite'
-  password?: string
+  password: string
 }
 
 /** Chama a função de servidor /api/admin/users com o token da sessão atual. */

@@ -38,8 +38,6 @@ export function ResetPasswordPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const tokenHash = params.get('token_hash')
-  // "invite": primeiro acesso de um usuário convidado (define a senha inicial).
-  const otpType = params.get('type') === 'invite' ? 'invite' : 'recovery'
   const linkError = params.get('error_description')
   const [verifying, setVerifying] = useState(Boolean(tokenHash))
   const [error, setError] = useState<string | null>(linkError ? translateAuthError(linkError) : null)
@@ -49,12 +47,12 @@ export function ResetPasswordPage() {
     if (!tokenHash || verified.current) return
     verified.current = true
     void getSupabase()
-      .auth.verifyOtp({ token_hash: tokenHash, type: otpType })
+      .auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
       .then(({ error: otpError }) => {
         if (otpError) setError(translateAuthError(otpError.message))
         setVerifying(false)
       })
-  }, [tokenHash, otpType])
+  }, [tokenHash])
 
   const { register, handleSubmit, formState } = useForm<PasswordValues>({
     resolver: zodResolver(passwordSchema),
@@ -77,7 +75,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout>
-      <h2 className="text-xl font-semibold tracking-tight text-ink">{otpType === 'invite' ? 'Criar sua senha' : 'Definir nova senha'}</h2>
+      <h2 className="text-xl font-semibold tracking-tight text-ink">Definir nova senha</h2>
       <p className="mt-1 text-[13px] text-muted">Use pelo menos 8 caracteres, com letras e números.</p>
 
       {!session ? (

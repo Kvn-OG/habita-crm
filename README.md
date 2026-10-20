@@ -72,13 +72,12 @@ Arquivos `.env*` (exceto `.env.example`) estão no `.gitignore`.
 ## Configuração do Supabase
 
 1. **Crie o projeto** no Supabase. Para a latência, prefira a região `South America (São Paulo)`.
-2. **Desative o cadastro público.** Em *Authentication → Sign In / Providers → Email*, desligue **"Allow new users to sign up"**. Contas passam a ser criadas apenas por convite. Mesmo que alguém se cadastre, a conta nasce **inativa** e não acessa nenhum dado (veja [Modelo de segurança](#modelo-de-segurança)).
+2. **Desative o cadastro público.** Em *Authentication → Sign In / Providers → Email*, desligue **"Allow new users to sign up"**. Contas passam a ser criadas apenas por um administrador, dentro do Habita. Mesmo que alguém se cadastre, a conta nasce **inativa** e não acessa nenhum dado (veja [Modelo de segurança](#modelo-de-segurança)).
 3. **URLs de redirecionamento.** Em *Authentication → URL Configuration*:
    - **Site URL:** a URL de produção (ex.: `https://crm.suaimobiliaria.com.br`).
    - **Redirect URLs:** adicione `http://localhost:5173/redefinir-senha` e `https://SEU-DOMINIO/redefinir-senha`.
-4. **Modelos de e-mail (recomendado).** Em *Authentication → Emails*, troque o link para que funcione mesmo quando o e-mail é aberto em outro dispositivo:
-   - *Reset Password:* `<a href="{{ .SiteURL }}/redefinir-senha?token_hash={{ .TokenHash }}&type=recovery">Redefinir senha</a>`
-   - *Invite user:* `<a href="{{ .SiteURL }}/redefinir-senha?token_hash={{ .TokenHash }}&type=invite">Criar minha senha</a>`
+4. **Modelo de e-mail (recomendado).** Em *Authentication → Emails → Reset Password*, troque o link para que funcione mesmo quando o e-mail é aberto em outro dispositivo:
+   `<a href="{{ .SiteURL }}/redefinir-senha?token_hash={{ .TokenHash }}&type=recovery">Redefinir senha</a>`
 
    Com o modelo padrão do Supabase (`{{ .ConfirmationURL }}`), a redefinição também funciona, mas o link precisa ser aberto no **mesmo navegador** em que foi solicitado (fluxo PKCE).
 5. **Aplique as migrations** (próxima seção). Elas criam tabelas, políticas RLS, funções e o bucket privado `property-images`.
@@ -130,7 +129,7 @@ npx supabase gen types typescript --linked > src/types/database.generated.ts
 
 Nenhum usuário, senha ou chave administrativa fica no código. O primeiro administrador é promovido manualmente, pelo painel do Supabase:
 
-1. Em *Authentication → Users*, clique em **Invite user** e informe o e-mail do responsável. Com o modelo de convite do passo 4, a pessoa define a própria senha. Alternativa: **Add user → Create new user**, com uma senha forte e "Auto Confirm User".
+1. Em *Authentication → Users*, clique em **Add user → Create new user**, informe o e-mail do responsável, uma senha forte e marque "Auto Confirm User".
 2. O trigger `on_auth_user_created` cria automaticamente o perfil, com papel `corretor` e **inativo**.
 3. No **SQL Editor**, execute (troque o e-mail):
 
@@ -143,7 +142,7 @@ Nenhum usuário, senha ou chave administrativa fica no código. O primeiro admin
    O SQL Editor roda com privilégios administrativos, por isso a trava de alteração de papéis não se aplica nele.
 4. Entre no CRM com essa conta.
 
-**Demais usuários:** crie direto no Habita, em *Configurações → Equipe → Novo acesso* (somente administradores), com **senha provisória** (sem depender de e-mail) ou **convite por e-mail**. Na mesma tela é possível **redefinir a senha** de um membro. Quem recebe uma senha provisória vê um aviso para trocá-la no primeiro acesso.
+**Demais usuários:** crie direto no Habita, em *Configurações → Equipe → Novo acesso* (somente administradores), com uma **senha provisória** (sem depender de e-mail). Na mesma tela é possível **redefinir a senha** de um membro. Quem recebe uma senha provisória vê um aviso para trocá-la no primeiro acesso.
 
 Essas ações rodam na função de servidor `api/admin/users.ts` (Vercel Function), que usa a chave `SUPABASE_SERVICE_ROLE_KEY` disponível **apenas no servidor da Vercel** (criada pela integração Supabase ↔ Vercel) e confere, a cada pedido, se quem chama é um administrador ativo. Em desenvolvimento local (`npm run dev`) essa função não roda; use `npx vercel dev` para testá-la no computador.
 
@@ -241,7 +240,7 @@ Executadas nesta versão:
 - `npm run build`: build de produção concluído.
 - Revisão visual automatizada (Playwright) em 1440 px e 390 px das principais telas, com estados vazios, modais, validação e menu mobile: sem erros de execução e sem rolagem horizontal. Para isso, as respostas do Supabase foram **interceptadas com listas vazias apenas no ambiente de teste**.
 
-**Ainda não verificado:** a integração com um projeto Supabase real (login, gravação, upload de fotos, e-mails de convite e recuperação), porque não havia credenciais disponíveis. Recomenda-se um teste ponta a ponta após configurar o projeto.
+**Ainda não verificado:** a integração com um projeto Supabase real (login, gravação, upload de fotos, e-mails de recuperação de senha), porque não havia credenciais disponíveis. Recomenda-se um teste ponta a ponta após configurar o projeto.
 
 ## Limitações conhecidas
 

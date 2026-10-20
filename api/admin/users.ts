@@ -6,7 +6,7 @@
  * Cada requisição precisa do token de sessão de um ADMINISTRADOR ATIVO.
  *
  * POST /api/admin/users
- *   { action: "create", email, full_name, role, mode: "password" | "invite", password? }
+ *   { action: "create", email, full_name, role, password }
  *   { action: "reset_password", user_id, password }
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -21,20 +21,13 @@ const password = z
   .regex(/[A-Za-z]/, 'A senha deve ter pelo menos uma letra.')
   .regex(/\d/, 'A senha deve ter pelo menos um número.')
 
-const createSchema = z
-  .object({
-    action: z.literal('create'),
-    email: z.string().trim().toLowerCase().pipe(z.email('Informe um e-mail válido.')),
-    full_name: z.string().trim().min(2, 'Informe o nome completo.').max(120),
-    role: z.enum(ROLES),
-    mode: z.enum(['password', 'invite']),
-    password: z.string().optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.mode !== 'password') return
-    const result = password.safeParse(value.password ?? '')
-    if (!result.success) ctx.addIssue({ code: 'custom', path: ['password'], message: result.error.issues[0]?.message ?? 'Senha inválida.' })
-  })
+const createSchema = z.object({
+  action: z.literal('create'),
+  email: z.string().trim().toLowerCase().pipe(z.email('Informe um e-mail válido.')),
+  full_name: z.string().trim().min(2, 'Informe o nome completo.').max(120),
+  role: z.enum(ROLES),
+  password,
+})
 
 const resetSchema = z.object({
   action: z.literal('reset_password'),
@@ -60,9 +53,6 @@ function adminClient(): SupabaseClient | null {
 
 function translate(message: string) {
   if (/already been registered|already registered|already exists/i.test(message)) return 'Já existe um acesso com este e-mail.'
-  if (/rate limit|too many|email.*limit/i.test(message)) {
-    return 'O limite de e-mails do Supabase foi atingido. Crie o acesso com senha provisória ou tente mais tarde.'
-  }
   if (/password/i.test(message) && /weak|short|characters/i.test(message)) return 'A senha não atende aos requisitos de segurança.'
   return message
 }
@@ -106,12 +96,12 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Criação do acesso
-  const origin = new URL(request.url).origin
-  const metadata = { full_name: body.full_name, must_change_password: body.mode === 'password' }
-  const created =
-    body.mode === 'password'
-      ? await admin.auth.admin.createUser({ email: body.email, password: body.password, email_confirm: true, user_metadata: metadata })
-      : await admin.auth.admin.inviteUserByEmail(body.email, { data: metadata, redirectTo: `${origin}/redefinir-senha` })
+  const created = await admin.auth.admin.createUser({
+    email: body.email,
+    password: body.password,
+    email_confirm: true,
+    user_metadata: { full_name: body.full_name, must_change_password: true },
+  })
   if (created.error || !created.data.user) return json(400, { error: translate(created.error?.message ?? 'Não foi possível criar o acesso.') })
 
   const userId = created.data.user.id

@@ -2,7 +2,7 @@ import { LogOut, X } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import { mainNavigation, secondaryNavigation, type NavItem } from '@/app/navigation'
 import { useAuth } from '@/auth/AuthContext'
-import { Avatar } from '@/components/ui/Avatar'
+import { UserAvatar } from '@/components/ui/Avatar'
 import { IconButton } from '@/components/ui/Button'
 import { roleLabels } from '@/lib/labels'
 import { cn } from '@/lib/utils'
@@ -117,7 +117,7 @@ export function Sidebar({ mobileOpen, onClose, collapsed: collapsedPreference }:
         <div className="border-t border-white/[0.07] p-3">
           <div className={cn('flex items-center gap-3 rounded-md py-2', collapsed ? 'flex-col px-0' : 'px-2')}>
             <span title={collapsed ? `${displayName} · ${profile ? roleLabels[profile.role] : ''}` : undefined}>
-              <Avatar name={displayName} size="md" tone="accent" />
+              <UserAvatar name={displayName} avatarPath={profile?.avatar_path} size="md" tone="accent" />
             </span>
             {!collapsed && (
               <div className="min-w-0 flex-1">

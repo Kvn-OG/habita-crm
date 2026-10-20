@@ -16,6 +16,7 @@ function isValidUrl(value: string | undefined): value is string {
 export const isSupabaseConfigured = isValidUrl(url) && Boolean(anonKey) && !anonKey?.includes('sua-chave')
 
 export const PROPERTY_IMAGES_BUCKET = 'property-images'
+export const AVATARS_BUCKET = 'avatars'
 
 const client: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url as string, anonKey as string, {

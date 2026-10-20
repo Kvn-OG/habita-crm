@@ -1,5 +1,5 @@
 import { normalizePhone } from '@/lib/format'
-import { getSupabase } from '@/lib/supabase'
+import { AVATARS_BUCKET, getSupabase } from '@/lib/supabase'
 import type { AppRole, Pipeline, PipelineStage, Profile, StageCategory, UserPreferences } from '@/types/domain'
 
 export const settingsKeys = {
@@ -9,7 +9,7 @@ export const settingsKeys = {
 export async function listProfiles(): Promise<Profile[]> {
   const { data, error } = await getSupabase()
     .from('profiles')
-    .select('id,full_name,email,phone,role,is_active,created_at,updated_at')
+    .select('id,full_name,email,phone,role,is_active,avatar_path,created_at,updated_at')
     .order('is_active')
     .order('full_name')
   if (error) throw error
@@ -37,6 +37,34 @@ export async function updateOwnPreferences(id: string, current: UserPreferences 
     }
     throw error
   }
+}
+
+/** Envia a nova foto (já preparada), aponta o perfil para ela e apaga a anterior. */
+export async function uploadOwnAvatar(id: string, file: File, previousPath: string | null | undefined) {
+  const supabase = getSupabase()
+  const path = `${id}/${crypto.randomUUID()}.jpg`
+  const { error: uploadError } = await supabase.storage
+    .from(AVATARS_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false, cacheControl: '3600' })
+  if (uploadError) {
+    if (/bucket not found/i.test(uploadError.message)) {
+      throw new Error('A foto de perfil ainda não está habilitada no banco. Peça ao administrador para aplicar a atualização mais recente.')
+    }
+    throw uploadError
+  }
+  const { error } = await supabase.from('profiles').update({ avatar_path: path }).eq('id', id)
+  if (error) {
+    await supabase.storage.from(AVATARS_BUCKET).remove([path])
+    throw error
+  }
+  if (previousPath) await supabase.storage.from(AVATARS_BUCKET).remove([previousPath])
+}
+
+export async function removeOwnAvatar(id: string, path: string) {
+  const supabase = getSupabase()
+  const { error } = await supabase.from('profiles').update({ avatar_path: null }).eq('id', id)
+  if (error) throw error
+  await supabase.storage.from(AVATARS_BUCKET).remove([path])
 }
 
 export async function updateMemberAccess(id: string, patch: { role?: AppRole; is_active?: boolean }) {

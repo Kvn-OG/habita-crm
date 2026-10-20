@@ -6,10 +6,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/feedback/Alert'
 import { TextField } from '@/components/forms/inputs'
 import { Button } from '@/components/ui/Button'
-import { consumeSessionExpiredFlag } from '@/lib/session'
+import { consumeSessionExpiredFlag, consumeSessionReplacedFlag } from '@/lib/session'
 import { z } from '@/lib/validations'
-import { useAuth } from './AuthContext'
+import { useAuth, type OtherSession } from './AuthContext'
 import { AuthLayout } from './AuthLayout'
+import { SessionConflictModal } from './SessionConflictModal'
 
 const schema = z.object({
   email: z.string().trim().min(1, 'Informe seu e-mail.').pipe(z.email('Informe um e-mail válido.')),
@@ -18,11 +19,14 @@ const schema = z.object({
 type Values = z.infer<typeof schema>
 
 export function LoginPage() {
-  const { signIn } = useAuth()
+  const { signIn, resolveSessionConflict } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
-  const [sessionExpired] = useState(() => consumeSessionExpiredFlag())
+  const [sessionReplaced] = useState(() => consumeSessionReplacedFlag())
+  const [sessionExpired] = useState(() => consumeSessionExpiredFlag() && !sessionReplaced)
+  const [conflict, setConflict] = useState<OtherSession[] | null>(null)
+  const [loginCancelled, setLoginCancelled] = useState(false)
   const from = (location.state as { from?: string } | null)?.from ?? '/'
   const passwordUpdated = (location.state as { passwordUpdated?: boolean } | null)?.passwordUpdated
 
@@ -33,13 +37,27 @@ export function LoginPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null)
-    const message = await signIn(values.email, values.password)
-    if (message) {
-      setError(message)
+    setLoginCancelled(false)
+    const result = await signIn(values.email, values.password)
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+    if (result.conflict.length > 0) {
+      setConflict(result.conflict)
       return
     }
     navigate(from, { replace: true })
   })
+
+  const resolveConflict = async (choice: 'end-others' | 'cancel') => {
+    const message = await resolveSessionConflict(choice)
+    if (message) return message
+    setConflict(null)
+    if (choice === 'end-others') navigate(from, { replace: true })
+    else setLoginCancelled(true)
+    return null
+  }
 
   return (
     <AuthLayout>
@@ -47,6 +65,12 @@ export function LoginPage() {
       <p className="mt-1 text-[13px] text-muted">Use o e-mail e a senha cadastrados pela administração.</p>
 
       <div className="mt-5 space-y-3 empty:hidden">
+        {sessionReplaced && !error && (
+          <Alert tone="warning" title="Sua sessão foi encerrada">
+            Sua conta foi acessada em outro dispositivo. Entre novamente para continuar por aqui.
+          </Alert>
+        )}
+        {loginCancelled && !error && <Alert tone="info">Login cancelado. A sessão no outro dispositivo continua aberta.</Alert>}
         {sessionExpired && !error && (
           <Alert tone="warning" title="Sua sessão expirou">
             Por segurança, entre novamente para continuar.
@@ -84,6 +108,7 @@ export function LoginPage() {
           Entrar
         </Button>
       </form>
+      {conflict && <SessionConflictModal sessions={conflict} onResolve={resolveConflict} />}
     </AuthLayout>
   )
 }

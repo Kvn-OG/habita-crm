@@ -1,7 +1,13 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import { getErrorMessage } from '@/lib/errors'
-import { markSessionExpired, onSessionExpired } from '@/lib/session'
+import {
+  hasPendingSessionDecision,
+  markSessionExpired,
+  markSessionReplaced,
+  onSessionExpired,
+  setPendingSessionDecision,
+} from '@/lib/session'
 import { getSupabase } from '@/lib/supabase'
 import type { Profile } from '@/types/domain'
 
@@ -22,6 +28,16 @@ export type Permissions = {
   canEditLead: (lead: { assigned_to: string | null; created_by: string | null }) => boolean
 }
 
+/** Outra sessão aberta da mesma conta, encontrada no momento do login. */
+export type OtherSession = {
+  id: string
+  created_at: string
+  last_active_at: string
+  user_agent: string | null
+}
+
+export type SignInResult = { error: string | null; conflict: OtherSession[] }
+
 type AuthValue = {
   initializing: boolean
   session: Session | null
@@ -31,7 +47,10 @@ type AuthValue = {
   permissions: Permissions
   /** true quando a sessão atual veio de um link de recuperação de senha. */
   recoveryMode: boolean
-  signIn: (email: string, password: string) => Promise<string | null>
+  /** Entra e verifica se a conta já tem sessão aberta em outro dispositivo. */
+  signIn: (email: string, password: string) => Promise<SignInResult>
+  /** Decide um login com outra sessão aberta: encerra as outras sessões ou desiste deste login. */
+  resolveSessionConflict: (choice: 'end-others' | 'cancel') => Promise<string | null>
   signOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<string | null>
   updatePassword: (password: string) => Promise<string | null>
@@ -64,8 +83,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null)
   const [profileResult, setProfileResult] = useState<{ userId: string; state: ProfileState } | null>(null)
   const [recoveryMode, setRecoveryMode] = useState(false)
+  // Enquanto um login aguarda a verificação (ou a decisão) sobre outras sessões, a sessão
+  // nova fica oculta para o restante do app. Começa ativo se uma decisão ficou pendente.
+  const [sessionGated, setSessionGated] = useState(hasPendingSessionDecision)
   const manualSignOut = useRef(false)
-  const userId = session?.user.id ?? null
+  const visibleSession = sessionGated ? null : session
+  const userId = visibleSession?.user.id ?? null
 
   useEffect(() => {
     let active = true
@@ -94,6 +117,41 @@ export function AuthProvider({ children }: PropsWithChildren) {
       listener.subscription.unsubscribe()
     }
   }, [supabase])
+
+  // Aba fechada ou recarregada antes de decidir sobre a outra sessão: o login é cancelado,
+  // sem afetar a sessão que já estava aberta no outro dispositivo.
+  useEffect(() => {
+    if (!hasPendingSessionDecision()) return
+    setPendingSessionDecision(false)
+    manualSignOut.current = true
+    void supabase.auth.signOut({ scope: 'local' }).finally(() => setSessionGated(false))
+  }, [supabase])
+
+  // Verifica periodicamente (e ao voltar para a aba) se esta sessão foi encerrada por um
+  // login em outro dispositivo. Se a função ainda não existir no banco, nada acontece.
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    const check = async () => {
+      const { data, error } = await supabase.rpc('current_session_active')
+      if (!active || error || data !== false) return
+      markSessionReplaced()
+      manualSignOut.current = true
+      await supabase.auth.signOut({ scope: 'local' })
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void check()
+    }
+    const interval = window.setInterval(() => void check(), 60_000)
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [supabase, userId])
 
   // Sessão rejeitada pelo servidor durante uma consulta: encerra localmente.
   useEffect(
@@ -151,15 +209,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const value = useMemo<AuthValue>(
     () => ({
       initializing,
-      session,
-      user: session?.user ?? null,
+      session: visibleSession,
+      user: visibleSession?.user ?? null,
       profileState,
       profile,
       permissions,
       recoveryMode,
       signIn: async (email, password) => {
+        setSessionGated(true)
         const { error } = await supabase.auth.signInWithPassword({ email, password })
-        return error ? translateAuthError(error.message) : null
+        if (error) {
+          setSessionGated(false)
+          return { error: translateAuthError(error.message), conflict: [] }
+        }
+        const { data, error: sessionsError } = await supabase.rpc('other_active_sessions')
+        const conflict = sessionsError ? [] : ((data ?? []) as OtherSession[])
+        if (conflict.length === 0) {
+          setSessionGated(false)
+          return { error: null, conflict }
+        }
+        setPendingSessionDecision(true)
+        return { error: null, conflict }
+      },
+      resolveSessionConflict: async (choice) => {
+        if (choice === 'end-others') {
+          const { error } = await supabase.auth.signOut({ scope: 'others' })
+          if (error) return translateAuthError(error.message)
+        } else {
+          manualSignOut.current = true
+          await supabase.auth.signOut({ scope: 'local' })
+        }
+        setPendingSessionDecision(false)
+        setSessionGated(false)
+        return null
       },
       signOut: async () => {
         manualSignOut.current = true
@@ -185,7 +267,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       clearRecoveryMode: () => setRecoveryMode(false),
     }),
-    [initializing, session, profileState, profile, permissions, recoveryMode, supabase, userId, loadProfile],
+    [initializing, visibleSession, profileState, profile, permissions, recoveryMode, supabase, userId, loadProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

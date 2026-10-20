@@ -2,7 +2,7 @@ import { Bell, ChevronDown, ChevronRight, LogOut, Menu, PanelLeftClose, PanelLef
 import { Link, useMatches, useNavigate, type UIMatch } from 'react-router-dom'
 import type { RouteHandle } from '@/app/navigation'
 import { useAuth } from '@/auth/AuthContext'
-import { Avatar } from '@/components/ui/Avatar'
+import { UserAvatar } from '@/components/ui/Avatar'
 import { IconButton } from '@/components/ui/Button'
 import { MenuItem, Popover } from '@/components/ui/Popover'
 import { roleLabels } from '@/lib/labels'
@@ -117,7 +117,7 @@ export function Topbar({ onOpenMenu, menuOpen, collapsed, onToggleCollapsed }: T
               aria-label="Menu do usuário"
               className="flex items-center gap-2 rounded-md py-1 pr-1.5 pl-1 transition-colors hover:bg-hover"
             >
-              <Avatar name={displayName} size="sm" tone="brand" />
+              <UserAvatar name={displayName} avatarPath={profile?.avatar_path} size="sm" tone="brand" />
               <span className="hidden max-w-36 truncate text-[13px] font-medium text-ink xl:block">{displayName}</span>
               <ChevronDown className="hidden size-4 text-subtle sm:block" aria-hidden="true" />
             </button>

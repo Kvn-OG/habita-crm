@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Save } from 'lucide-react'
+import { Camera, KeyRound, Save, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useAuth } from '@/auth/AuthContext'
 import { passwordSchema, type PasswordValues } from '@/auth/ResetPasswordPage'
 import { useToast } from '@/components/feedback/Toast'
 import { PhoneField, TextField } from '@/components/forms/inputs'
+import { UserAvatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
@@ -13,7 +15,8 @@ import { teamMembersKey } from '@/hooks/useTeamMembers'
 import { getErrorMessage } from '@/lib/errors'
 import { roleLabels } from '@/lib/labels'
 import { phone, requiredText, z } from '@/lib/validations'
-import { updateOwnProfile } from '../api'
+import { removeOwnAvatar, settingsKeys, updateOwnProfile, uploadOwnAvatar } from '../api'
+import { prepareAvatar, validateAvatarFile } from '../avatar'
 
 const profileSchema = z.object({ full_name: requiredText('o nome', 2, 120), phone: phone(false) })
 type ProfileValues = z.infer<typeof profileSchema>
@@ -60,7 +63,8 @@ export function ProfileSettings() {
       <Card>
         <CardHeader title="Meus dados" description="Exibidos para a equipe como responsável por leads e compromissos." />
         <CardBody>
-          <form className="space-y-4" onSubmit={(event) => void saveProfile(event)} noValidate>
+          <ProfilePhoto />
+          <form className="mt-5 space-y-4" onSubmit={(event) => void saveProfile(event)} noValidate>
             <TextField label="Nome completo" required error={profileForm.formState.errors.full_name?.message} {...profileForm.register('full_name')} />
             <Controller
               control={profileForm.control}
@@ -96,6 +100,85 @@ export function ProfileSettings() {
           </form>
         </CardBody>
       </Card>
+    </div>
+  )
+}
+
+function ProfilePhoto() {
+  const { profile, refreshProfile } = useAuth()
+  const toast = useToast()
+  const queryClient = useQueryClient()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState<'upload' | 'remove' | null>(null)
+  if (!profile) return null
+  const name = profile.full_name.trim() || profile.email
+
+  const afterChange = async () => {
+    await refreshProfile()
+    await queryClient.invalidateQueries({ queryKey: settingsKeys.profiles })
+  }
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return
+    const invalid = validateAvatarFile(file)
+    if (invalid) {
+      toast.error('Foto não enviada', invalid)
+      return
+    }
+    setBusy('upload')
+    try {
+      await uploadOwnAvatar(profile.id, await prepareAvatar(file), profile.avatar_path)
+      await afterChange()
+      toast.success('Foto de perfil atualizada.')
+    } catch (error) {
+      toast.error('Não foi possível enviar a foto', getErrorMessage(error))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const remove = async () => {
+    if (!profile.avatar_path) return
+    setBusy('remove')
+    try {
+      await removeOwnAvatar(profile.id, profile.avatar_path)
+      await afterChange()
+      toast.success('Foto de perfil removida.')
+    } catch (error) {
+      toast.error('Não foi possível remover a foto', getErrorMessage(error))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <UserAvatar name={name} avatarPath={profile.avatar_path} size="xl" />
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" icon={<Camera />} loading={busy === 'upload'} disabled={busy !== null} onClick={() => inputRef.current?.click()}>
+            {profile.avatar_path ? 'Trocar foto' : 'Enviar foto'}
+          </Button>
+          {profile.avatar_path && (
+            <Button variant="ghost" size="sm" icon={<Trash2 />} loading={busy === 'remove'} disabled={busy !== null} onClick={() => void remove()}>
+              Remover
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted">JPG, PNG ou WEBP. A imagem é recortada em formato quadrado.</p>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Escolher foto de perfil"
+        onChange={(event) => {
+          void upload(event.target.files?.[0])
+          event.target.value = ''
+        }}
+      />
     </div>
   )
 }

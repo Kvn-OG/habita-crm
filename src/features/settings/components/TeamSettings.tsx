@@ -5,7 +5,7 @@ import { useAuth } from '@/auth/AuthContext'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { useToast } from '@/components/feedback/Toast'
 import { Select } from '@/components/forms/inputs'
-import { Avatar } from '@/components/ui/Avatar'
+import { UserAvatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader } from '@/components/ui/Card'
@@ -76,7 +76,7 @@ export function TeamSettings() {
               return (
                 <li key={member.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <Avatar name={name} size="md" tone={member.is_active ? 'soft' : 'soft'} className={member.is_active ? undefined : 'opacity-50'} />
+                    <UserAvatar name={name} avatarPath={member.avatar_path} size="md" className={member.is_active ? undefined : 'opacity-50'} />
                     <div className="min-w-0">
                       <p className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-ink">
                         <span className="truncate">{name}</span>

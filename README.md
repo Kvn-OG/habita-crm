@@ -98,6 +98,8 @@ As migrations ficam em `supabase/migrations/`, versionadas e em ordem:
 | `…120600_views_functions.sql` | View `lead_overview` e RPCs (`dashboard_metrics`, vínculos, reordenação) |
 | `…120700_rls_policies.sql` | Row Level Security de todas as tabelas |
 | `…120800_storage.sql` | Bucket privado de fotos e suas políticas |
+| `20261021120000_profile_preferences.sql` | Preferências pessoais do usuário (`profiles.preferences`) |
+| `20261022120000_sessions_avatars.sql` | Sessão única por conta (`other_active_sessions`, `current_session_active`) e foto de perfil (`profiles.avatar_path`, bucket `avatars`) |
 
 **Opção A: Supabase CLI (recomendado)**
 
@@ -115,7 +117,7 @@ npx supabase db push
 npm run test:db
 ```
 
-Esse comando aplica todas as migrations em um PostgreSQL embutido (PGlite), com uma simulação mínima dos esquemas `auth` e `storage`, e executa 54 verificações de regras e permissões. Ele não substitui um teste em um projeto Supabase real.
+Esse comando aplica todas as migrations em um PostgreSQL embutido (PGlite), com uma simulação mínima dos esquemas `auth` e `storage`, e executa 71 verificações de regras e permissões. Ele não substitui um teste em um projeto Supabase real.
 
 ### Tipos do banco (opcional)
 
@@ -184,6 +186,8 @@ Essas ações rodam na função de servidor `api/admin/users.ts` (Vercel Functio
 - **Autoria confiável:** `created_by` é preenchido pelo banco com `auth.uid()` e não pode ser forjado nem alterado.
 - **Fotos:** bucket **privado**, limitado a JPG, PNG e WEBP de até 5 MB. O upload só é aceito em `properties/<id de imóvel existente>/`, e a exibição usa URLs assinadas válidas por 1 hora. O banco guarda apenas o caminho do arquivo, nunca o binário.
 - **Integridade:** chaves estrangeiras, `check constraints` (valores não negativos, suítes ≤ quartos, orçamento mínimo ≤ máximo, preço obrigatório conforme a finalidade), código de imóvel único e telefone/e-mail de contato únicos.
+- **Sessão única por conta:** ao entrar, o Habita verifica se a conta já está aberta em outro dispositivo. Se estiver, a pessoa escolhe entre encerrar a outra sessão e entrar ou cancelar o login (a outra sessão continua aberta). O dispositivo desconectado percebe o encerramento em até 1 minuto (ou ao voltar para a aba) e volta ao login com um aviso.
+- **Fotos de perfil:** bucket **privado** `avatars`, recortadas em 320 × 320 px no navegador. Cada pessoa só envia e apaga arquivos da própria pasta (`<id do usuário>/`), e o perfil só pode apontar para ela. A equipe ativa vê as fotos por URLs assinadas.
 - **Sessão:** a renovação do token é automática. Se o servidor rejeitar a sessão (expirada ou revogada), o usuário é desconectado e volta ao login com o aviso "Sua sessão expirou".
 
 ## Estrutura do projeto

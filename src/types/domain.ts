@@ -54,6 +54,8 @@ export type Profile = {
   is_active: boolean
   /** Preferências pessoais (ex.: ações rápidas do painel). Ausente se a migration ainda não foi aplicada. */
   preferences?: UserPreferences | null
+  /** Foto de perfil no bucket "avatars". Ausente se a migration ainda não foi aplicada. */
+  avatar_path?: string | null
   created_at: string
   updated_at: string
 }

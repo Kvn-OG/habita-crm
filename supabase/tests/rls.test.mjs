@@ -19,13 +19,16 @@ create role authenticated nologin;
 create role service_role nologin bypassrls;
 create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}'::jsonb);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+create function auth.jwt() returns jsonb language sql stable as $$
+  select jsonb_build_object('sub', current_setting('request.jwt.claim.sub', true), 'session_id', nullif(current_setting('request.jwt.claim.session_id', true), '')) $$;
+create table auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid, created_at timestamptz default now(), updated_at timestamptz default now(), refreshed_at timestamp, not_after timestamptz, user_agent text);
 create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
 create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner_id text default auth.uid()::text);
 alter table storage.objects enable row level security;
 create function storage.foldername(name text) returns text[] language sql immutable as $$
   select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
 grant usage on schema public, auth, storage, extensions to anon, authenticated;
-grant execute on function auth.uid() to anon, authenticated;
+grant execute on function auth.uid(), auth.jwt() to anon, authenticated;
 grant all on storage.objects to authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
@@ -205,6 +208,37 @@ console.log('\nExclusões')
 await expectError('contato com lead não pode ser excluído', () => as(users.gestor, 'authenticated', `delete from public.contacts where id = $1`, [contactId]), /foreign key/)
 const delProp = await as(users.gestor, 'authenticated', `delete from public.properties where id = $1 returning id`, [propertyId])
 ok(delProp.rows.length === 1, 'gestor exclui imóvel (cascata em fotos/vínculos)')
+
+console.log('\nSessões')
+async function asSession(userId, sessionId, sql, params = []) {
+  return db.transaction(async (tx) => {
+    await tx.exec('set local role authenticated')
+    await tx.query(`select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claim.session_id', $2, true)`, [userId, sessionId])
+    return tx.query(sql, params)
+  })
+}
+const sessA = (await db.query(`insert into auth.sessions (user_id, user_agent) values ($1, 'PC A') returning id`, [users.corretor])).rows[0].id
+const sessB = (await db.query(`insert into auth.sessions (user_id, user_agent) values ($1, 'PC B') returning id`, [users.corretor])).rows[0].id
+await db.query(`insert into auth.sessions (user_id, user_agent) values ($1, 'Outra conta')`, [users.gestor])
+await db.query(`insert into auth.sessions (user_id, user_agent, not_after) values ($1, 'Expirada', now() - interval '1 day')`, [users.corretor])
+const others = await asSession(users.corretor, sessB, `select user_agent from public.other_active_sessions()`)
+ok(others.rows.length === 1 && others.rows[0].user_agent === 'PC A', 'login no PC B enxerga apenas a sessão válida do PC A')
+ok((await asSession(users.corretor, sessA, `select public.current_session_active() as v`)).rows[0].v === true, 'sessão do PC A segue ativa')
+await db.query(`delete from auth.sessions where id = $1`, [sessA])
+ok((await asSession(users.corretor, sessA, `select public.current_session_active() as v`)).rows[0].v === false, 'PC A percebe que a sua sessão foi encerrada')
+await expectError('visitante não consulta sessões', () => as(null, 'anon', `select * from public.other_active_sessions()`), /permission denied/)
+
+console.log('\nFoto de perfil')
+const ownAvatar = await as(users.corretor, 'authenticated', `update public.profiles set avatar_path = $1 || '/foto.jpg' where id = $1 returning id`, [users.corretor])
+ok(ownAvatar.rows.length === 1, 'usuário define a própria foto')
+await expectError('foto apontando para a pasta de outro usuário', () => as(users.corretor, 'authenticated', `update public.profiles set avatar_path = $2 || '/foto.jpg' where id = $1`, [users.corretor, users.gestor]), /avatar_path_check/)
+await as(users.corretor, 'authenticated', `insert into storage.objects (bucket_id, name) values ('avatars', $1 || '/foto.jpg')`, [users.corretor])
+ok(true, 'envio de arquivo na própria pasta')
+await expectError('envio na pasta de outro usuário', () => as(users.corretor, 'authenticated', `insert into storage.objects (bucket_id, name) values ('avatars', $1 || '/x.jpg')`, [users.gestor]), /row-level security/)
+const seen = await as(users.gestor, 'authenticated', `select name from storage.objects where bucket_id = 'avatars'`)
+ok(seen.rows.length === 1, 'membro ativo vê as fotos da equipe')
+const removedByOther = await as(users.gestor, 'authenticated', `delete from storage.objects where bucket_id = 'avatars' returning id`)
+ok(removedByOther.rows.length === 0, 'ninguém apaga a foto de outro usuário')
 
 console.log(failures ? `\n${failures} falha(s)` : '\nTodos os testes passaram')
 process.exit(failures ? 1 : 0)

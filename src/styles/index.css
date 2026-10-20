@@ -1,0 +1,137 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
+@import 'tailwindcss';
+
+/*
+ * Identidade visual Habita — CRM imobiliário.
+ * Cores da marca: verde profundo #142B25 (principal), verde-menta #D0F0D8 (secundária),
+ * preto #070707 e branco. Ajuste somente aqui: todos os componentes usam estes tokens.
+ */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Títulos e marca: geométrica, alinhada ao logotipo */
+  --font-display: 'Manrope Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* Verde Habita (principal) */
+  --color-brand-950: #0c1b17;
+  --color-brand-900: #142b25; /* Cor principal da marca */
+  --color-brand-800: #1e3d35;
+  --color-brand-700: #2b5649;
+  --color-brand-600: #3b7060;
+  --color-brand-200: #c2dccb;
+  --color-brand-100: #dcece1;
+  --color-brand-50: #eef6f0;
+
+  /* Menta Habita (secundária) — destaques e indicadores */
+  --color-mint: #d0f0d8; /* Cor secundária da marca */
+  --color-accent-700: #28744a; /* texto sobre fundo claro (contraste AA) */
+  --color-accent-600: #3a9361;
+  --color-accent-500: #6cc68b;
+  --color-accent-300: #b4e4c0;
+  --color-accent-200: #d0f0d8;
+  --color-accent-100: #e2f6e7;
+  --color-accent-50: #f0faf2;
+
+  /* Neutros com leve tom verde */
+  --color-canvas: #f4f7f5; /* Fundo geral */
+  --color-surface: #ffffff; /* Superfícies */
+  --color-ink: #142b25; /* Texto principal (verde quase preto da marca) */
+  --color-muted: #5b6b65; /* Texto secundário */
+  --color-subtle: #8c9a94;
+  --color-line: #e1e8e3; /* Bordas */
+  --color-line-strong: #cdd8d1;
+  --color-hover: #eef3ef;
+
+  /* Estados */
+  --color-success-700: #1f6b45;
+  --color-success-50: #ecf6f0;
+  --color-warning-700: #8a5a12;
+  --color-warning-50: #fdf5e6;
+  --color-danger-700: #b42318;
+  --color-danger-600: #d92d20;
+  --color-danger-50: #fef1f0;
+  --color-info-700: #1d5b8f;
+  --color-info-50: #eef5fb;
+
+  /* Gráficos: série única (validado: luminosidade, croma e contraste sobre a superfície) */
+  --color-chart-1: #16805e;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  --shadow-card: 0 1px 2px rgb(20 43 37 / 0.04), 0 1px 3px rgb(20 43 37 / 0.06);
+  --shadow-raised: 0 4px 14px rgb(20 43 37 / 0.08), 0 1px 3px rgb(20 43 37 / 0.06);
+  --shadow-overlay: 0 20px 48px rgb(12 27 23 / 0.2), 0 2px 8px rgb(12 27 23 / 0.08);
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-up: slide-up 180ms ease-out;
+  --animate-slide-in-left: slide-in-left 200ms ease-out;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans text-sm;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-700;
+  }
+
+  ::selection {
+    @apply bg-mint text-brand-950;
+  }
+
+  /* Títulos com a tipografia da marca */
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  dialog::backdrop {
+    background: rgb(12 27 23 / 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    @apply opacity-40;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

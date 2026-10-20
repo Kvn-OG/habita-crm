@@ -1,0 +1,28 @@
+# Dependências e build
+node_modules
+dist
+dist-ssr
+*.local
+
+# Variáveis de ambiente (nunca versionar credenciais)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.branches
+supabase/.temp
+
+# Logs e editores
+*.log
+npm-debug.log*
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Vercel CLI
+.vercel
+
+# Claude Code (configurações pessoais)
+.claude/settings.local.json

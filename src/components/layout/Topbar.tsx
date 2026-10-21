@@ -48,7 +48,7 @@ export function Topbar({ onOpenMenu, menuOpen, collapsed, onToggleCollapsed }: T
         <IconButton
           label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
           size="icon"
-          className="-ml-2 hidden lg:inline-flex"
+          className="-ml-2 max-lg:hidden"
           onClick={onToggleCollapsed}
           aria-expanded={!collapsed}
           aria-controls="app-sidebar"
@@ -115,7 +115,7 @@ export function Topbar({ onOpenMenu, menuOpen, collapsed, onToggleCollapsed }: T
               aria-expanded={open}
               aria-controls={id}
               aria-label="Menu do usuário"
-              className="flex items-center gap-2 rounded-md py-1 pr-1.5 pl-1 transition-colors hover:bg-hover"
+              className="flex shrink-0 items-center gap-2 rounded-md p-1 transition-colors hover:bg-hover sm:pr-1.5"
             >
               <UserAvatar name={displayName} avatarPath={profile?.avatar_path} size="sm" tone="brand" />
               <span className="hidden max-w-36 truncate text-[13px] font-medium text-ink xl:block">{displayName}</span>

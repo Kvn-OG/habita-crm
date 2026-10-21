@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 type PopoverProps = {
@@ -9,7 +10,8 @@ type PopoverProps = {
 }
 
 /**
- * Painel suspenso com posicionamento fixo (não é cortado por contêineres com rolagem).
+ * Painel suspenso com posicionamento fixo, renderizado no <body>: não é cortado por contêineres
+ * com rolagem nem interfere no layout de quem o abre (ex.: o cabeçalho com backdrop-filter).
  * Fecha ao clicar fora, pressionar Esc, rolar a página ou redimensionar a janela.
  */
 export function Popover({ trigger, children, align = 'end', className }: PopoverProps) {
@@ -60,19 +62,21 @@ export function Popover({ trigger, children, align = 'end', className }: Popover
   return (
     <div ref={anchorRef} className="relative">
       {trigger({ open, toggle: () => setOpen((value) => !value), id })}
-      {open && (
-        <div
-          ref={panelRef}
-          id={id}
-          style={style}
-          className={cn(
-            'z-50 max-h-[min(24rem,calc(100dvh-6rem))] max-w-[calc(100vw-1rem)] min-w-56 animate-fade-in overflow-y-auto rounded-lg border border-line bg-surface p-1.5 shadow-raised',
-            className,
-          )}
-        >
-          {children(() => setOpen(false))}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            id={id}
+            style={style}
+            className={cn(
+              'z-50 max-h-[min(24rem,calc(100dvh-6rem))] max-w-[calc(100vw-1rem)] min-w-56 animate-fade-in overflow-y-auto rounded-lg border border-line bg-surface p-1.5 shadow-raised',
+              className,
+            )}
+          >
+            {children(() => setOpen(false))}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

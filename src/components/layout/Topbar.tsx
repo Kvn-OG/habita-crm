@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, ChevronRight, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Search, UserRound } from 'lucide-react'
+import { ChevronDown, ChevronRight, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Search, UserRound } from 'lucide-react'
 import { Link, useMatches, useNavigate, type UIMatch } from 'react-router-dom'
 import type { RouteHandle } from '@/app/navigation'
 import { useAuth } from '@/auth/AuthContext'
@@ -7,6 +7,7 @@ import { IconButton } from '@/components/ui/Button'
 import { MenuItem, Popover } from '@/components/ui/Popover'
 import { roleLabels } from '@/lib/labels'
 import { cn } from '@/lib/utils'
+import { TodayNotifications } from '@/features/calendar/components/TodayNotifications'
 import { GlobalSearch } from './GlobalSearch'
 
 function useRouteMeta() {
@@ -89,23 +90,7 @@ export function Topbar({ onOpenMenu, menuOpen, collapsed, onToggleCollapsed }: T
           <Search />
         </IconButton>
 
-        <Popover
-          trigger={({ open, toggle, id }) => (
-            <IconButton label="Notificações" size="icon" onClick={toggle} aria-expanded={open} aria-controls={id}>
-              <Bell />
-            </IconButton>
-          )}
-          className="w-72"
-        >
-          {() => (
-            <div className="px-3 py-3">
-              <p className="text-[13px] font-semibold text-ink">Notificações</p>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted">
-                A central de notificações será disponibilizada em uma próxima etapa, com alertas de retornos, visitas e novos leads.
-              </p>
-            </div>
-          )}
-        </Popover>
+        <TodayNotifications />
 
         <Popover
           trigger={({ open, toggle, id }) => (

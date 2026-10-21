@@ -65,6 +65,7 @@ export function AgendaPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appointmentKeys.all }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['agenda-today'] }),
       ])
       setToCancel(null)
       toast.success(value === 'realizado' ? 'Compromisso marcado como realizado.' : 'Compromisso cancelado.')

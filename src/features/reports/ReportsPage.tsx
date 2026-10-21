@@ -20,6 +20,7 @@ import { leadSourceLabels, pipelineLabels } from '@/lib/labels'
 import { cn } from '@/lib/utils'
 import type { Pipeline } from '@/types/domain'
 import { fetchReport, reportKeys, type ReportData } from './api'
+import { FollowupDiagnostics } from './components/FollowupDiagnostics'
 import { buildReportRows, downloadCsv, toCsv } from './export'
 import {
   aggregateSources, DEFAULT_PERIOD, formatDays, formatPercent, monthlySeries, percent, periodOptions, reportSummary,
@@ -27,6 +28,7 @@ import {
 } from './utils'
 
 const WonByMonthChart = lazy(() => import('./components/WonByMonthChart'))
+const LeadUtilizationChart = lazy(() => import('./components/LeadUtilizationChart'))
 
 const FILTER_KEYS = ['periodo', 'de', 'ate', 'funil'] as const
 
@@ -364,6 +366,24 @@ function ReportsContent() {
                 )}
               </Section>
 
+              <Section title="Aproveitamento de leads por corretor" description="Leads recebidos no período: quantos foram concluídos, seguem em andamento ou foram perdidos. A porcentagem é a taxa de conversão.">
+                {data.brokers.some((broker) => broker.leads > 0) ? (
+                  <div className="p-4">
+                    <Suspense
+                      fallback={
+                        <div className="grid h-40 place-items-center">
+                          <Spinner />
+                        </div>
+                      }
+                    >
+                      <LeadUtilizationChart brokers={data.brokers} />
+                    </Suspense>
+                  </div>
+                ) : (
+                  <EmptyState compact icon={<UsersRound />} title="Nenhum lead com corretor no período" description="O aproveitamento aparece quando os leads do período têm corretor responsável." />
+                )}
+              </Section>
+
               <Section title="Desempenho por corretor" description="Leads e visitas do período, negociações abertas hoje e fechamentos do período">
                 <Brokers data={data} />
               </Section>
@@ -378,6 +398,13 @@ function ReportsContent() {
               </div>
             </>
           )}
+
+          <Section
+            title="Diagnóstico de follow-up por corretor"
+            description="Situação de agora (não depende do período): leads em andamento com retorno vencido, sem retorno marcado ou sem contato recente. Clique no corretor para ver os leads."
+          >
+            <FollowupDiagnostics />
+          </Section>
 
           <p className="text-xs leading-relaxed text-subtle">
             O funil e o tempo por etapa usam o histórico de atividades dos leads: registros apagados do histórico deixam de ser considerados.

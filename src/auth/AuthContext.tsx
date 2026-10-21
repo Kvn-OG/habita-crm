@@ -131,8 +131,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     void supabase.auth.signOut({ scope: 'local' }).finally(() => setSessionGated(false))
   }, [supabase])
 
-  // Verifica periodicamente (e ao voltar para a aba) se esta sessão foi encerrada por um
-  // login em outro dispositivo. Se a função ainda não existir no banco, nada acontece.
+  // A cada minuto (e ao voltar para a aba) dá o sinal de "sessão em uso" e verifica se
+  // esta sessão foi encerrada por um login em outro dispositivo. Só sessões com sinal
+  // recente geram o aviso de conta aberta em outro lugar.
   useEffect(() => {
     if (!userId) return
     let active = true
@@ -146,6 +147,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const onVisible = () => {
       if (document.visibilityState === 'visible') void check()
     }
+    void check()
     const interval = window.setInterval(() => void check(), 60_000)
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)

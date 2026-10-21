@@ -56,9 +56,12 @@ export function buildReportRows(data: ReportData, period: Period, scope: string)
     rows.push([leadSourceLabels[source.source], source.total, source.won, source.lost, pct(percent(source.won, source.total))])
   }
 
-  rows.push([], ['Desempenho por corretor'], ['Corretor', 'Leads recebidos', 'Visitas realizadas', 'Negociações em andamento', 'Fechamentos', 'Valor fechado (R$)'])
+  rows.push([], ['Desempenho por corretor'], ['Corretor', 'Leads recebidos', 'Leads concluídos', 'Leads perdidos', 'Leads em andamento', 'Aproveitamento (%)', 'Visitas realizadas', 'Negociações em andamento', 'Fechamentos', 'Valor fechado (R$)'])
   for (const broker of data.brokers) {
-    rows.push([broker.full_name || 'Sem nome', broker.leads, broker.visits, broker.deals_open, broker.deals_won, Number(broker.won_amount)])
+    rows.push([
+      broker.full_name || 'Sem nome', broker.leads, broker.leads_won, broker.leads_lost, broker.leads_open,
+      pct(percent(broker.leads_won, broker.leads)), broker.visits, broker.deals_open, broker.deals_won, Number(broker.won_amount),
+    ])
   }
 
   rows.push([], ['Tempo médio por etapa'], ['Funil', 'Etapa', 'Média (dias)', 'Passagens consideradas'])

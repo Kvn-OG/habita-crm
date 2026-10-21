@@ -84,6 +84,7 @@ function AppointmentFormContent({ onClose, appointment, defaults }: AppointmentF
         queryClient.invalidateQueries({ queryKey: appointmentKeys.all }),
         queryClient.invalidateQueries({ queryKey: ['activities'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['agenda-today'] }),
       ])
       toast.success(isNew ? 'Compromisso agendado.' : 'Compromisso atualizado.')
       onClose()

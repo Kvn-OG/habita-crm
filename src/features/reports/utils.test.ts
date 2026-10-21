@@ -79,7 +79,7 @@ describe('exportação em planilha', () => {
       ],
       sources: [{ pipeline: 'venda', source: 'site', total: 4, won: 1, lost: 1 }],
       stage_times: [{ pipeline: 'venda', name: 'Novo lead', position: 1, avg_days: 2.5, samples: 3 }],
-      brokers: [{ id: '1', full_name: 'Ana', leads: 4, visits: 2, deals_open: 1, deals_won: 1, won_amount: 350000 }],
+      brokers: [{ id: '1', full_name: 'Ana', leads: 4, leads_won: 1, leads_lost: 1, leads_open: 2, visits: 2, deals_open: 1, deals_won: 1, won_amount: 350000 }],
       deals: { open_count: 1, open_amount: 200000, won_count: 1, won_amount: 350000, lost_count: 1, cancelled_count: 0, avg_days_to_close: 12 },
       monthly: [{ month: '2026-10', pipeline: 'venda', total: 1, amount: 350000 }],
       loss_reasons: [{ reason: 'Preço acima do orçamento', total: 1 }],
@@ -88,7 +88,7 @@ describe('exportação em planilha', () => {
     expect(csv).toContain('Conversão de leads (%);25')
     expect(csv).toContain('Taxa de sucesso das negociações (%);50')
     expect(csv).toContain('Venda;Fechado;1;25')
-    expect(csv).toContain('Ana;4;2;1;1;350000')
+    expect(csv).toContain('Ana;4;1;1;2;25;2;1;1;350000')
     expect(csv).toContain('Preço acima do orçamento;1')
     expect(csv).toContain('2026-10;1;350000')
   })

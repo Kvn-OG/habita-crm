@@ -180,6 +180,61 @@ ok(closed.rows[0].closed_at !== null, 'closed_at preenchido em etapa ganha')
 const m2 = (await as(users.corretor, 'authenticated', `select public.dashboard_metrics() as m`)).rows[0].m
 ok(m2.sales_closed === 1 && m2.leads_active === 0, 'venda concluída contabilizada')
 
+console.log('\nNegociações e propostas')
+const c2 = await as(users.corretor2, 'authenticated', `insert into public.contacts (full_name, phone) values ('Carlos Lima', '11977770000') returning id`)
+const lead2 = await as(users.corretor2, 'authenticated', `insert into public.leads (contact_id, purpose, stage_id, assigned_to) values ($1, 'venda', $2, $3) returning id`, [c2.rows[0].id, st('venda', 'Novo lead'), users.corretor2])
+const lead2Id = lead2.rows[0].id
+await as(users.corretor2, 'authenticated', `update public.leads set stage_id = $2 where id = $1`, [lead2Id, st('venda', 'Proposta')])
+await expectError('tipo diferente da finalidade do lead bloqueado', () => as(users.corretor2, 'authenticated', `insert into public.deals (lead_id, deal_type) values ($1, 'locacao')`, [lead2Id]), /finalidade do lead/)
+const deal = await as(users.corretor2, 'authenticated', `insert into public.deals (lead_id, property_id, deal_type, assigned_to) values ($1, $2, 'venda', $3) returning id`, [lead2Id, propertyId, users.corretor2])
+const dealId = deal.rows[0].id
+const propStatus = async () => (await db.query(`select status from public.properties where id = $1`, [propertyId])).rows[0].status
+ok(await propStatus() === 'em_negociacao', 'imóvel passa para "em negociação"')
+acts = await db.query(`select description from public.activities where lead_id = $1 and metadata ? 'deal_id'`, [lead2Id])
+ok(acts.rows.some((a) => a.description === 'Negociação de venda aberta.'), 'histórico: negociação aberta')
+const dealByOther = await as(users.corretor, 'authenticated', `update public.deals set notes = 'x' where id = $1 returning id`, [dealId])
+ok(dealByOther.rows.length === 0, 'corretor não edita negociação de outro responsável')
+await expectError('corretor não registra proposta em negociação de outro', () => as(users.corretor, 'authenticated', `insert into public.proposals (deal_id, amount) values ($1, 1)`, [dealId]), /row-level security/)
+const prop1 = await as(users.corretor2, 'authenticated', `insert into public.proposals (deal_id, amount) values ($1, 300000) returning id`, [dealId])
+await as(users.corretor2, 'authenticated', `update public.proposals set status = 'aceita' where id = $1`, [prop1.rows[0].id])
+let dealRow = (await db.query(`select amount, status, closed_at, loss_reason from public.deals where id = $1`, [dealId])).rows[0]
+ok(Number(dealRow.amount) === 300000, 'proposta aceita define o valor da negociação')
+const prop2 = await as(users.corretor2, 'authenticated', `insert into public.proposals (deal_id, amount) values ($1, 310000) returning id`, [dealId])
+await expectError('apenas uma proposta aceita por negociação', () => as(users.corretor2, 'authenticated', `update public.proposals set status = 'aceita' where id = $1`, [prop2.rows[0].id]), /proposals_one_accepted_idx/)
+acts = await db.query(`select description from public.activities where lead_id = $1 and metadata ? 'proposal_id' order by created_at`, [lead2Id])
+ok(acts.rows.some((a) => a.description === 'Proposta de R$ 300.000,00 aceita.'), `histórico: proposta aceita (${acts.rows.map((a) => a.description).join(' | ')})`)
+const dealView = await as(users.corretor, 'authenticated', `select contact_name, property_code, proposal_count, last_proposal_amount from public.deal_overview where id = $1`, [dealId])
+ok(dealView.rows[0]?.contact_name === 'Carlos Lima' && dealView.rows[0]?.proposal_count === 2 && Number(dealView.rows[0]?.last_proposal_amount) === 310000, 'deal_overview consolida dados')
+
+await as(users.corretor2, 'authenticated', `update public.deals set status = 'perdido', loss_reason = 'Preço acima do orçamento' where id = $1`, [dealId])
+dealRow = (await db.query(`select closed_at, loss_reason from public.deals where id = $1`, [dealId])).rows[0]
+ok(dealRow.closed_at !== null && dealRow.loss_reason === 'Preço acima do orçamento', 'perdida: data de encerramento e motivo')
+ok(await propStatus() === 'disponivel', 'imóvel volta a "disponível" sem negociação em andamento')
+await as(users.corretor2, 'authenticated', `update public.deals set status = 'em_andamento' where id = $1`, [dealId])
+dealRow = (await db.query(`select closed_at, loss_reason from public.deals where id = $1`, [dealId])).rows[0]
+ok(dealRow.closed_at === null && dealRow.loss_reason === null, 'reaberta: limpa encerramento e motivo')
+ok(await propStatus() === 'em_negociacao', 'imóvel volta a "em negociação"')
+await as(users.corretor2, 'authenticated', `update public.deals set status = 'ganho' where id = $1`, [dealId])
+ok(await propStatus() === 'vendido', 'ganha: imóvel vendido')
+const lead2Stage = await db.query(`select s.category from public.leads l join public.pipeline_stages s on s.id = l.stage_id where l.id = $1`, [lead2Id])
+ok(lead2Stage.rows[0].category === 'ganho', 'ganha: lead vai para a etapa de conclusão')
+acts = await db.query(`select description from public.activities where lead_id = $1 and metadata ? 'deal_id' and metadata ->> 'deal_status' = 'ganho'`, [lead2Id])
+ok(acts.rows[0]?.description === 'Negociação ganha por R$ 300.000,00.', 'histórico: negociação ganha')
+
+const report = (await as(users.gestor, 'authenticated', `select public.report_metrics(now() - interval '1 day', now() + interval '1 day') as r`)).rows[0].r
+const funnelStage = (name) => report.funnel.find((f) => f.pipeline === 'venda' && f.name === name)?.total
+ok(report.deals.won_count === 1 && Number(report.deals.won_amount) === 300000 && report.deals.open_count === 0, `report_metrics: negociações ${JSON.stringify(report.deals)}`)
+ok(funnelStage('Novo lead') === 2 && funnelStage('Proposta') === 2 && funnelStage('Fechado') === 2, 'report_metrics: funil pelas etapas percorridas')
+ok(report.sources.reduce((sum, s) => sum + s.total, 0) === 2 && report.monthly.length === 1, 'report_metrics: origens e vendas por mês')
+ok(report.brokers.find((b) => b.id === users.corretor2)?.deals_won === 1, 'report_metrics: desempenho por corretor')
+ok(report.stage_times.some((t) => t.name === 'Novo lead'), 'report_metrics: tempo por etapa')
+const lostReport = (await as(users.gestor, 'authenticated', `select public.report_metrics(now() - interval '1 day', now() + interval '1 day', 'locacao') as r`)).rows[0].r
+ok(lostReport.deals.won_count === 0 && lostReport.funnel.every((f) => f.pipeline === 'locacao'), 'report_metrics filtra pelo funil')
+const inactiveReport = (await as(users.inativo, 'authenticated', `select public.report_metrics(now() - interval '1 day', now() + interval '1 day') as r`)).rows[0].r
+ok(inactiveReport.deals.won_count === 0 && inactiveReport.brokers.length === 0, 'report_metrics para inativo não expõe dados')
+await expectError('anon não executa report_metrics', () => as(null, 'anon', `select public.report_metrics(now(), now())`), /permission denied/)
+await expectError('lead com negociação não pode ser excluído', () => as(users.gestor, 'authenticated', `delete from public.leads where id = $1`, [lead2Id]), /deals_lead_id_fkey/)
+
 console.log('\nHistórico de atividades')
 const leadActs = (await db.query(`select count(*)::int as n from public.activities where lead_id = $1`, [leadId])).rows[0].n
 const byOther = await as(users.corretor2, 'authenticated', `delete from public.activities where lead_id = $1 returning id`, [leadId])

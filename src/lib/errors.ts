@@ -36,6 +36,8 @@ const constraintMessages: Record<string, string> = {
   deals_lead_id_fkey: 'Este lead possui negociações vinculadas e não pode ser excluído.',
   leads_stage_id_fkey: 'Esta etapa possui leads vinculados e não pode ser excluída.',
   pipeline_stages_name_key: 'Já existe uma etapa com este nome neste funil.',
+  proposals_one_accepted_idx: 'Esta negociação já tem uma proposta aceita. Altere a situação dela antes de aceitar outra.',
+  deals_loss_reason_length: 'O motivo da perda deve ter no máximo 300 caracteres.',
 }
 
 /** Converte erros do Supabase/PostgREST em mensagens claras em português. */

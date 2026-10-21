@@ -1,6 +1,6 @@
 import type {
-  ActivityType, AppRole, AppointmentStatus, AppointmentType, ContactType, LeadSource, Pipeline,
-  PropertyPurpose, PropertyStatus, PropertyType, StageCategory,
+  ActivityType, AppRole, AppointmentStatus, AppointmentType, ContactType, DealStatus, LeadSource, Pipeline,
+  PropertyPurpose, PropertyStatus, PropertyType, ProposalStatus, StageCategory,
 } from '@/types/domain'
 
 export const roleLabels: Record<AppRole, string> = {
@@ -89,6 +89,32 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   realizado: 'Realizado',
   cancelado: 'Cancelado',
 }
+
+export const dealStatusLabels: Record<DealStatus, string> = {
+  em_andamento: 'Em andamento',
+  ganho: 'Ganha',
+  perdido: 'Perdida',
+  cancelado: 'Cancelada',
+}
+
+export const proposalStatusLabels: Record<ProposalStatus, string> = {
+  rascunho: 'Rascunho',
+  enviada: 'Enviada',
+  aceita: 'Aceita',
+  recusada: 'Recusada',
+  cancelada: 'Cancelada',
+}
+
+/** Motivos de perda sugeridos (o texto escolhido é gravado na negociação). */
+export const LOSS_REASONS = [
+  'Preço acima do orçamento',
+  'Financiamento ou crédito não aprovado',
+  'Fechou com outro imóvel',
+  'Fechou com outra imobiliária',
+  'Desistiu da compra ou locação',
+  'Imóvel deixou de estar disponível',
+  'Sem retorno do cliente',
+] as const
 
 export function toOptions<T extends string>(labels: Record<T, string>, order?: readonly T[]) {
   const keys = order ?? (Object.keys(labels) as T[])

@@ -45,6 +45,12 @@ export type AppointmentType = (typeof APPOINTMENT_TYPES)[number]
 export const APPOINTMENT_STATUSES = ['agendado', 'realizado', 'cancelado'] as const
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 
+export const DEAL_STATUSES = ['em_andamento', 'ganho', 'perdido', 'cancelado'] as const
+export type DealStatus = (typeof DEAL_STATUSES)[number]
+
+export const PROPOSAL_STATUSES = ['rascunho', 'enviada', 'aceita', 'recusada', 'cancelada'] as const
+export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number]
+
 export type Profile = {
   id: string
   full_name: string

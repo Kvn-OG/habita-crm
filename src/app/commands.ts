@@ -25,6 +25,7 @@ export const commands: Command[] = [
   { id: 'novo-imovel', group: 'acao', quick: true, label: 'Cadastrar imóvel', description: 'Novo imóvel na carteira', to: '/imoveis/novo', icon: Building2, keywords: [...CREATE, 'imovel', 'casa', 'apartamento', 'terreno'] },
   { id: 'novo-contato', group: 'acao', quick: true, label: 'Adicionar contato', description: 'Comprador, interessado ou proprietário', to: '/contatos?novo=1', icon: UserPlus, keywords: [...CREATE, 'contato', 'cliente', 'proprietario', 'comprador'] },
   { id: 'novo-lead', group: 'acao', quick: true, label: 'Criar lead', description: 'Nova oportunidade de venda ou locação', to: '/leads?novo=1', icon: Target, keywords: [...CREATE, 'lead', 'oportunidade', 'interessado'] },
+  { id: 'nova-negociacao', group: 'acao', quick: true, label: 'Abrir negociação', description: 'Negociação a partir de um lead', to: '/negociacoes?novo=1', icon: Handshake, keywords: [...CREATE, 'abrir', 'negociacao', 'proposta', 'fechamento'] },
   { id: 'agendar-visita', group: 'acao', quick: true, label: 'Agendar visita', description: 'Visita ou reunião na agenda', to: '/agenda?novo=1', icon: CalendarPlus, keywords: [...CREATE, 'agendar', 'visita', 'reuniao', 'compromisso', 'marcar'] },
 
   { id: 'funil-venda', group: 'atalho', quick: true, label: 'Funil de venda', description: 'Leads de venda por etapa', to: '/leads?visao=funil&funil=venda', icon: Columns3, keywords: ['funil', 'kanban', 'venda', 'vendas', 'leads', 'etapas'] },
@@ -42,8 +43,8 @@ export const commands: Command[] = [
   { id: 'pagina-imoveis', group: 'pagina', label: 'Imóveis', description: 'Carteira de imóveis', to: '/imoveis', icon: Building2, keywords: ['imoveis', 'carteira'] },
   { id: 'pagina-contatos', group: 'pagina', label: 'Contatos', description: 'Clientes e proprietários', to: '/contatos', icon: ContactRound, keywords: ['contatos', 'clientes'] },
   { id: 'pagina-agenda', group: 'pagina', label: 'Agenda', description: 'Visitas e reuniões', to: '/agenda', icon: CalendarDays, keywords: ['agenda', 'calendario'] },
-  { id: 'pagina-negociacoes', group: 'pagina', label: 'Negociações', description: 'Em preparação', to: '/negociacoes', icon: Handshake, keywords: ['negociacoes', 'propostas'] },
-  { id: 'pagina-relatorios', group: 'pagina', label: 'Relatórios', description: 'Em preparação', to: '/relatorios', icon: ChartColumn, keywords: ['relatorios', 'indicadores'] },
+  { id: 'pagina-negociacoes', group: 'pagina', label: 'Negociações', description: 'Propostas e fechamentos', to: '/negociacoes', icon: Handshake, keywords: ['negociacoes', 'propostas', 'fechamentos'] },
+  { id: 'pagina-relatorios', group: 'pagina', label: 'Relatórios', description: 'Desempenho e conversão', to: '/relatorios', icon: ChartColumn, keywords: ['relatorios', 'indicadores', 'desempenho', 'conversao', 'planilha'] },
   { id: 'pagina-configuracoes', group: 'pagina', label: 'Configurações', description: 'Perfil, equipe e funis', to: '/configuracoes', icon: Settings, keywords: ['configuracoes', 'ajustes', 'preferencias'] },
 ]
 

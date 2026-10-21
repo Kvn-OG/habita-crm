@@ -13,6 +13,7 @@ import { DetailItem, DetailList } from '@/components/ui/DetailList'
 import { LoadingScreen } from '@/components/ui/Feedback'
 import { AppointmentFormModal } from '@/features/calendar/components/AppointmentFormModal'
 import { UpcomingAppointments } from '@/features/calendar/components/UpcomingAppointments'
+import { LeadDeals } from '@/features/deals/components/LeadDeals'
 import { PropertyPrice, PropertyStatusBadge } from '@/features/properties/components/PropertyBadges'
 import { getErrorMessage } from '@/lib/errors'
 import { formatDate, formatPhone } from '@/lib/format'
@@ -254,6 +255,12 @@ export function LeadDetailPage() {
         </div>
 
         <div className="space-y-5">
+          <LeadDeals
+            leadId={lead.id}
+            canOpen={lead.stage_category === 'aberto' || lead.stage_category === 'negociacao'}
+            lead={{ id: lead.id, label: lead.contact_name, description: formatPhone(lead.contact_phone) }}
+            defaultProperty={lead.properties[0] ? { id: lead.properties[0].id, label: `${lead.properties[0].code} · ${lead.properties[0].title}` } : undefined}
+          />
           <Card>
             <CardHeader title="Próximos compromissos" />
             <UpcomingAppointments leadId={lead.id} />

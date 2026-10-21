@@ -94,12 +94,13 @@ As migrations ficam em `supabase/migrations/`, versionadas e em ordem:
 | `…120200_properties.sql` | `properties`, `property_images` e `property_owners` |
 | `…120300_pipeline_leads.sql` | `pipeline_stages` (com as etapas padrão), `leads` e `lead_properties` |
 | `…120400_activities_tasks_appointments.sql` | `activities`, `tasks`, `appointments` e o histórico automático |
-| `…120500_deals_proposals.sql` | `deals` e `proposals` (estrutura para a próxima etapa) |
+| `…120500_deals_proposals.sql` | `deals` e `proposals` |
 | `…120600_views_functions.sql` | View `lead_overview` e RPCs (`dashboard_metrics`, vínculos, reordenação) |
 | `…120700_rls_policies.sql` | Row Level Security de todas as tabelas |
 | `…120800_storage.sql` | Bucket privado de fotos e suas políticas |
 | `20261021120000_profile_preferences.sql` | Preferências pessoais do usuário (`profiles.preferences`) |
 | `20261022120000_sessions_avatars.sql` | Sessão única por conta (`other_active_sessions`, `current_session_active`) e foto de perfil (`profiles.avatar_path`, bucket `avatars`) |
+| `20261023120000_deals_reports.sql` | Regras automáticas das negociações (imóvel, lead e histórico), motivo de perda, view `deal_overview` e relatórios (`report_metrics`) |
 
 **Opção A: Supabase CLI (recomendado)**
 
@@ -117,7 +118,7 @@ npx supabase db push
 npm run test:db
 ```
 
-Esse comando aplica todas as migrations em um PostgreSQL embutido (PGlite), com uma simulação mínima dos esquemas `auth` e `storage`, e executa 71 verificações de regras e permissões. Ele não substitui um teste em um projeto Supabase real.
+Esse comando aplica todas as migrations em um PostgreSQL embutido (PGlite), com uma simulação mínima dos esquemas `auth` e `storage`, e executa 96 verificações de regras e permissões. Ele não substitui um teste em um projeto Supabase real.
 
 ### Tipos do banco (opcional)
 
@@ -208,8 +209,8 @@ src/
     leads/        leads: lista, funil kanban, detalhes e histórico de atividades
     calendar/     agenda de visitas e reuniões
     settings/     perfil, equipe e funis
-    deals/        negociações (em preparação)
-    reports/      relatórios (em preparação)
+    deals/        negociações: lista, detalhes, propostas e fechamento
+    reports/      relatórios por período e exportação em planilha
     search/       busca global
   hooks/          filtros na URL, debounce, equipe
   lib/            supabase, formatação pt-BR, erros, rótulos, validações (Zod)
@@ -231,16 +232,17 @@ supabase/
 - **Agenda:** agendamento de visitas e reuniões (lead, imóvel, responsável, duração), lista agrupada por dia e ações para marcar como realizado, editar ou cancelar.
 - **Configurações:** perfil e troca de senha, gestão da equipe (liberar e desativar acesso, papéis) e configuração dos funis no banco (renomear, categoria, ativar ou desativar, reordenar, adicionar etapas).
 - **Busca global:** pelo campo do cabeçalho (atalho `Ctrl+K`), em imóveis, contatos e leads.
-- **Negociações e Relatórios:** páginas de preparação que descrevem o que será entregue. As tabelas `deals` e `proposals` já existem.
+- **Negociações:** abertas a partir de um lead em andamento (pela lista ou pela página do lead), com imóvel, valor, previsão de fechamento e responsável. Propostas e contrapropostas têm valor, validade, condições e situação, e a proposta aceita define o valor da negociação. Ao marcar como ganha, o imóvel fica vendido ou alugado e o lead vai para a etapa de conclusão. Ao perder (com motivo) ou cancelar, o imóvel volta a ficar disponível se não houver outra negociação em andamento. Tudo fica registrado no histórico do lead.
+- **Relatórios:** filtro por período (predefinido ou personalizado) e por funil. Mostram o resumo do período, o funil de conversão pelas etapas percorridas, os leads por origem, os fechamentos por mês, o desempenho por corretor, o tempo médio em cada etapa e os motivos de perda, com exportação em planilha (CSV para Excel).
 
 ## Verificações realizadas
 
 Executadas nesta versão:
 
 - `npm run typecheck`: sem erros (TypeScript strict, `noUncheckedIndexedAccess`).
-- `npm run lint`: sem erros. Restam 7 avisos de *fast refresh*, que afetam apenas o recarregamento em desenvolvimento.
-- `npm test`: 22 testes unitários aprovados.
-- `npm run test:db`: 54 verificações de migrations e RLS aprovadas no PGlite. Cobrem papéis, contas inativas, acesso anônimo, duplicidades, normalização, regras de preço, funis, histórico automático, storage e indicadores.
+- `npm run lint`: sem erros. Restam 8 avisos de *fast refresh*, que afetam apenas o recarregamento em desenvolvimento.
+- `npm test`: 43 testes unitários aprovados.
+- `npm run test:db`: 96 verificações de migrations e RLS aprovadas no PGlite. Cobrem papéis, contas inativas, acesso anônimo, duplicidades, normalização, regras de preço, funis, histórico automático, storage, indicadores, negociações, propostas e relatórios.
 - `npm run build`: build de produção concluído.
 - Revisão visual automatizada (Playwright) em 1440 px e 390 px das principais telas, com estados vazios, modais, validação e menu mobile: sem erros de execução e sem rolagem horizontal. Para isso, as respostas do Supabase foram **interceptadas com listas vazias apenas no ambiente de teste**.
 
@@ -256,12 +258,11 @@ Executadas nesta versão:
 - **Fuso horário:** datas são exibidas no horário de Brasília. O agendamento usa o horário do dispositivo, que se presume estar no mesmo fuso.
 - **CEP:** a busca de endereço consulta o serviço público ViaCEP. Se ele estiver indisponível, o preenchimento é manual.
 - **Sem modo offline** e sem tema escuro nesta versão.
-- **Negociações, relatórios, notificações, WhatsApp, portais, contratos e comissões** não foram implementados, conforme o escopo da primeira etapa.
+- **Relatórios:** o funil e o tempo por etapa usam o histórico de atividades. Registros apagados do histórico deixam de ser considerados, e reordenar etapas muda a leitura de leads antigos.
+- **Notificações, WhatsApp, portais, contratos e comissões** não foram implementados.
 
 ## Próximas etapas
 
 1. Testes ponta a ponta com um projeto Supabase real.
-2. Módulo de Negociações (`deals` e `proposals`) e atualização automática da situação do imóvel.
-3. Tarefas e lembretes, com central de notificações.
-4. Relatórios gerenciais e exportação.
-5. Integração com WhatsApp (segunda etapa do projeto).
+2. Tarefas e lembretes, com central de notificações.
+3. Integração com WhatsApp (segunda etapa do projeto).

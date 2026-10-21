@@ -26,6 +26,8 @@ export type Permissions = {
   /** Gestão de equipe e configuração dos funis. */
   canManageSettings: boolean
   canEditLead: (lead: { assigned_to: string | null; created_by: string | null }) => boolean
+  /** Mesmas regras dos leads: gestores, responsável, autor ou qualquer membro se não houver responsável. */
+  canEditDeal: (deal: { assigned_to: string | null; created_by: string | null }) => boolean
 }
 
 /** Outra sessão aberta da mesma conta, encontrada no momento do login. */
@@ -195,14 +197,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const active = Boolean(profile?.is_active)
     const isAdmin = active && profile?.role === 'admin'
     const isManager = active && (profile?.role === 'admin' || profile?.role === 'gestor')
+    const canEditOwned = (record: { assigned_to: string | null; created_by: string | null }) =>
+      isManager ||
+      (active && (record.assigned_to === null || record.assigned_to === profile?.id || record.created_by === profile?.id))
     return {
       isAdmin,
       isManager,
       canDelete: isManager,
       canManageSettings: isAdmin,
-      canEditLead: (lead) =>
-        isManager ||
-        (active && (lead.assigned_to === null || lead.assigned_to === profile?.id || lead.created_by === profile?.id)),
+      canEditLead: canEditOwned,
+      canEditDeal: canEditOwned,
     }
   }, [profile])
 

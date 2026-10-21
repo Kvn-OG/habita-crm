@@ -7,8 +7,6 @@ export type NavItem = {
   label: string
   icon: LucideIcon
   end?: boolean
-  /** Módulo ainda em preparação (exibe indicação discreta). */
-  preparing?: boolean
 }
 
 export const mainNavigation: NavItem[] = [
@@ -17,8 +15,8 @@ export const mainNavigation: NavItem[] = [
   { to: '/imoveis', label: 'Imóveis', icon: Building2 },
   { to: '/contatos', label: 'Contatos', icon: ContactRound },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { to: '/negociacoes', label: 'Negociações', icon: Handshake, preparing: true },
-  { to: '/relatorios', label: 'Relatórios', icon: ChartColumn, preparing: true },
+  { to: '/negociacoes', label: 'Negociações', icon: Handshake },
+  { to: '/relatorios', label: 'Relatórios', icon: ChartColumn },
 ]
 
 export const secondaryNavigation: NavItem[] = [{ to: '/configuracoes', label: 'Configurações', icon: Settings }]

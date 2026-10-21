@@ -16,7 +16,7 @@ function NavEntry({ item, onNavigate, collapsed }: { item: NavItem; onNavigate: 
       to={item.to}
       end={item.end}
       onClick={onNavigate}
-      title={collapsed ? (item.preparing ? `${item.label} (em breve)` : item.label) : undefined}
+      title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
         cn(
           'group relative flex h-9.5 items-center gap-3 rounded-md text-[13px] font-medium transition-colors',
@@ -40,11 +40,6 @@ function NavEntry({ item, onNavigate, collapsed }: { item: NavItem; onNavigate: 
             aria-hidden="true"
           />
           <span className={cn('flex-1 truncate', collapsed && 'sr-only')}>{item.label}</span>
-          {item.preparing && !collapsed && (
-            <span className="rounded-sm border border-white/10 px-1.5 py-px text-[10px] font-normal tracking-wide text-brand-200/70">
-              Em breve
-            </span>
-          )}
         </>
       )}
     </NavLink>

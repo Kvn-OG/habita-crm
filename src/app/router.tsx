@@ -97,7 +97,14 @@ export const router = createBrowserRouter([
               {
                 path: 'negociacoes',
                 handle: handle('Negociações'),
-                lazy: () => import('@/features/deals/DealsPage').then((m) => ({ Component: m.DealsPage })),
+                children: [
+                  { index: true, lazy: () => import('@/features/deals/DealsPage').then((m) => ({ Component: m.DealsPage })) },
+                  {
+                    path: ':id',
+                    handle: handle('Detalhes da negociação', 'Detalhes'),
+                    lazy: () => import('@/features/deals/DealDetailPage').then((m) => ({ Component: m.DealDetailPage })),
+                  },
+                ],
               },
               {
                 path: 'relatorios',

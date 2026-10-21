@@ -25,10 +25,10 @@ export type Permissions = {
   canDelete: boolean
   /** Gestão de equipe e configuração dos funis. */
   canManageSettings: boolean
-  /** Relatórios, dados de toda a equipe e informações administrativas (admin e gestor). */
+  /** Relatórios, dados de toda a equipe, acessos e marketing (somente administradores). */
   canViewReports: boolean
   canEditLead: (lead: { assigned_to: string | null; created_by: string | null }) => boolean
-  /** Mesmas regras dos leads: gestores, responsável ou autor. */
+  /** Mesmas regras dos leads: administradores, responsável ou autor. */
   canEditDeal: (deal: { assigned_to: string | null; created_by: string | null }) => boolean
 }
 
@@ -198,7 +198,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const permissions = useMemo<Permissions>(() => {
     const active = Boolean(profile?.is_active)
     const isAdmin = active && profile?.role === 'admin'
-    const isManager = active && (profile?.role === 'admin' || profile?.role === 'gestor')
+    // Não há mais papel intermediário: "gestão" é o administrador.
+    const isManager = isAdmin
     const canEditOwned = (record: { assigned_to: string | null; created_by: string | null }) =>
       isManager || (active && (record.assigned_to === profile?.id || record.created_by === profile?.id))
     return {

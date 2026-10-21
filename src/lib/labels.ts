@@ -5,7 +5,6 @@ import type {
 
 export const roleLabels: Record<AppRole, string> = {
   admin: 'Administrador',
-  gestor: 'Gestor',
   corretor: 'Corretor',
 }
 
@@ -59,6 +58,7 @@ export const stageCategoryLabels: Record<StageCategory, string> = {
 
 export const leadSourceLabels: Record<LeadSource, string> = {
   site: 'Site',
+  landing_page: 'Landing page',
   instagram: 'Instagram',
   whatsapp: 'WhatsApp',
   telefone: 'Telefone',

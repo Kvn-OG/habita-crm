@@ -33,13 +33,13 @@ export function GlobalSearch() {
   }, [])
 
   const term = value.trim()
-  const isManager = useAuth().permissions.canViewReports
+  const isAdmin = useAuth().permissions.isAdmin
   const items = useMemo<Item[]>(() => {
-    const matches = term ? searchCommands(term, 7, isManager) : commandsByIds(DEFAULT_QUICK_ACTIONS)
+    const matches = term ? searchCommands(term, 7, isAdmin) : commandsByIds(DEFAULT_QUICK_ACTIONS)
     const list: Item[] = matches.map((command) => ({ kind: 'command', command }))
     if (term.length >= 2) list.push({ kind: 'search', term })
     return list
-  }, [term, isManager])
+  }, [term, isAdmin])
 
   const close = () => {
     setOpen(false)

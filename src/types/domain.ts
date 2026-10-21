@@ -3,7 +3,7 @@
  * Para tipos gerados automaticamente, veja a seção "Tipos do banco" no README.
  */
 
-export const APP_ROLES = ['admin', 'gestor', 'corretor'] as const
+export const APP_ROLES = ['admin', 'corretor'] as const
 export type AppRole = (typeof APP_ROLES)[number]
 
 export const CONTACT_TYPES = ['comprador', 'interessado_locacao', 'proprietario', 'outro'] as const
@@ -29,7 +29,7 @@ export type Pipeline = (typeof PIPELINES)[number]
 export const STAGE_CATEGORIES = ['aberto', 'negociacao', 'ganho', 'perdido'] as const
 export type StageCategory = (typeof STAGE_CATEGORIES)[number]
 
-export const LEAD_SOURCES = ['site', 'instagram', 'whatsapp', 'telefone', 'indicacao', 'portal', 'outro'] as const
+export const LEAD_SOURCES = ['site', 'landing_page', 'instagram', 'whatsapp', 'telefone', 'indicacao', 'portal', 'outro'] as const
 export type LeadSource = (typeof LEAD_SOURCES)[number]
 
 export const ACTIVITY_TYPES = [

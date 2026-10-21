@@ -83,7 +83,7 @@ export function SearchPage() {
 
   const query = useQuery({ queryKey: ['search', debounced], queryFn: () => searchAll(debounced), enabled: active })
   const total = query.data ? query.data.properties.length + query.data.contacts.length + query.data.leads.length : 0
-  const shortcuts = searchCommands(term, 8, useAuth().permissions.canViewReports)
+  const shortcuts = searchCommands(term, 8, useAuth().permissions.isAdmin)
 
   return (
     <div className="space-y-5">

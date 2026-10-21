@@ -8,11 +8,12 @@
  * POST /api/admin/users
  *   { action: "create", email, full_name, role, password }
  *   { action: "reset_password", user_id, password }
+ *   { action: "delete", user_id }  (os registros da pessoa são mantidos, sem autor/responsável)
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
-const ROLES = ['admin', 'gestor', 'corretor'] as const
+const ROLES = ['admin', 'corretor'] as const
 
 const password = z
   .string()
@@ -35,7 +36,12 @@ const resetSchema = z.object({
   password,
 })
 
-const bodySchema = z.discriminatedUnion('action', [createSchema, resetSchema])
+const deleteSchema = z.object({
+  action: z.literal('delete'),
+  user_id: z.uuid('Usuário inválido.'),
+})
+
+const bodySchema = z.discriminatedUnion('action', [createSchema, resetSchema, deleteSchema])
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -91,6 +97,18 @@ export async function POST(request: Request): Promise<Response> {
       password: body.password,
       user_metadata: { must_change_password: true },
     })
+    if (error) return json(400, { error: translate(error.message) })
+    return json(200, { ok: true })
+  }
+
+  if (body.action === 'delete') {
+    if (body.user_id === caller.user.id) return json(400, { error: 'Você não pode excluir o seu próprio acesso.' })
+    const { data: target } = await admin.from('profiles').select('id').eq('id', body.user_id).maybeSingle()
+    if (!target) return json(404, { error: 'Usuário não encontrado.' })
+    // Foto de perfil é removida junto; os registros comerciais ficam no CRM.
+    const { data: files } = await admin.storage.from('avatars').list(body.user_id)
+    if (files?.length) await admin.storage.from('avatars').remove(files.map((file) => `${body.user_id}/${file.name}`))
+    const { error } = await admin.auth.admin.deleteUser(body.user_id)
     if (error) return json(400, { error: translate(error.message) })
     return json(200, { ok: true })
   }

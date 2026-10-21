@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { contactSchema, emptyContactValues, toContactPayload } from '@/features/contacts/schema'
 import { leadSchema } from '@/features/leads/schema'
+import {
+  campaignSchema, emptyCampaignValues, emptyLandingPageValues, landingPageSchema, suggestUtm, toCampaignPayload,
+} from '@/features/marketing/schema'
 import { emptyPropertyValues, propertySchema, toPropertyPayload } from '@/features/properties/schema'
 import { sanitizeSearchTerm } from './utils'
 
@@ -104,5 +107,27 @@ describe('busca', () => {
   it('remove caracteres especiais dos filtros do PostgREST', () => {
     expect(sanitizeSearchTerm('casa, (centro)*')).toBe('casa centro')
     expect(sanitizeSearchTerm('100%_off')).toBe('100 off')
+  })
+})
+
+describe('marketing', () => {
+  it('sugere o identificador UTM a partir do nome da campanha', () => {
+    expect(suggestUtm('Lançamento Jardim Primavera — Outubro!')).toBe('lancamento-jardim-primavera-outubro')
+  })
+
+  it('valida campanha e normaliza o payload', () => {
+    const errors = messages(campaignSchema.safeParse({ ...emptyCampaignValues, name: 'X', starts_on: '2026-10-10', ends_on: '2026-10-01', utm_campaign: 'com espaço' }))
+    expect(errors.name).toMatch(/pelo menos 2/)
+    expect(errors.ends_on).toMatch(/antes do início/)
+    expect(errors.utm_campaign).toMatch(/sem acento/)
+    const payload = toCampaignPayload(campaignSchema.parse({ ...emptyCampaignValues, name: 'MCMV', utm_campaign: 'MCMV-Out' }))
+    expect(payload.utm_campaign).toBe('mcmv-out')
+    expect(payload.spent).toBe(0)
+    expect(payload.landing_page_id).toBeNull()
+  })
+
+  it('exige endereço completo da landing page', () => {
+    const errors = messages(landingPageSchema.safeParse({ ...emptyLandingPageValues, name: 'MCMV', purpose: 'Minha Casa', url: 'meusite.com' }))
+    expect(errors.url).toMatch(/https:\/\//)
   })
 })

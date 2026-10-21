@@ -37,6 +37,8 @@ const constraintMessages: Record<string, string> = {
   leads_stage_id_fkey: 'Esta etapa possui leads vinculados e não pode ser excluída.',
   pipeline_stages_name_key: 'Já existe uma etapa com este nome neste funil.',
   proposals_one_accepted_idx: 'Esta negociação já tem uma proposta aceita. Altere a situação dela antes de aceitar outra.',
+  campaigns_utm_campaign_key: 'Já existe uma campanha com este identificador UTM. Use um valor diferente.',
+  campaigns_period: 'O término da campanha não pode ser antes do início.',
   deals_loss_reason_length: 'O motivo da perda deve ter no máximo 300 caracteres.',
 }
 

@@ -52,7 +52,7 @@ function StageProgress({
               disabled={disabled || current || pending}
               onClick={() => onSelect(stage)}
               aria-current={current ? 'step' : undefined}
-              title={disabled ? 'Somente o responsável ou gestores podem mover este lead' : `Mover para ${stage.name}`}
+              title={disabled ? 'Somente o responsável ou administradores podem mover este lead' : `Mover para ${stage.name}`}
               className={cn(
                 'group w-full text-left disabled:cursor-default',
                 !disabled && !current && 'cursor-pointer',
@@ -189,7 +189,7 @@ export function LeadDetailPage() {
           )}
           {!canEdit && (
             <p className="mt-3 flex items-center gap-1.5 text-xs text-muted">
-              <Lock className="size-3.5" aria-hidden="true" /> Somente o corretor responsável, o autor do lead ou gestores podem alterar este lead.
+              <Lock className="size-3.5" aria-hidden="true" /> Somente o corretor responsável, o autor do lead ou administradores podem alterar este lead.
             </p>
           )}
         </CardBody>

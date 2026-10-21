@@ -55,7 +55,9 @@ type SidebarProps = {
 
 export function Sidebar({ mobileOpen, onClose, collapsed: collapsedPreference }: SidebarProps) {
   const { profile, user, signOut, permissions } = useAuth()
-  const navigation = mainNavigation.filter((item) => !item.managerOnly || permissions.canViewReports)
+  const visible = (item: NavItem) => !item.adminOnly || permissions.isAdmin
+  const navigation = mainNavigation.filter(visible)
+  const secondary = secondaryNavigation.filter(visible)
   const displayName = profile?.full_name.trim() || user?.email || 'Usuário'
   // No celular o menu aberto é sempre completo.
   const collapsed = collapsedPreference && !mobileOpen
@@ -104,7 +106,7 @@ export function Sidebar({ mobileOpen, onClose, collapsed: collapsedPreference }:
             ))}
           </div>
           <div className="mt-auto space-y-0.5 pt-6">
-            {secondaryNavigation.map((item) => (
+            {secondary.map((item) => (
               <NavEntry key={item.to} item={item} onNavigate={onClose} collapsed={collapsed} />
             ))}
           </div>

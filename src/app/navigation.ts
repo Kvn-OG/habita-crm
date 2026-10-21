@@ -1,5 +1,6 @@
 import {
-  Building2, CalendarDays, ChartColumn, ContactRound, Handshake, LayoutDashboard, Settings, Target, type LucideIcon,
+  Building2, CalendarDays, ChartColumn, ContactRound, Handshake, LayoutDashboard, Megaphone, Settings, Target, UsersRound,
+  type LucideIcon,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -7,8 +8,8 @@ export type NavItem = {
   label: string
   icon: LucideIcon
   end?: boolean
-  /** Visível apenas para administradores e gestores. */
-  managerOnly?: boolean
+  /** Visível apenas para administradores. */
+  adminOnly?: boolean
 }
 
 export const mainNavigation: NavItem[] = [
@@ -18,10 +19,14 @@ export const mainNavigation: NavItem[] = [
   { to: '/contatos', label: 'Contatos', icon: ContactRound },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/negociacoes', label: 'Negociações', icon: Handshake },
-  { to: '/relatorios', label: 'Relatórios', icon: ChartColumn, managerOnly: true },
+  { to: '/relatorios', label: 'Relatórios', icon: ChartColumn, adminOnly: true },
+  { to: '/marketing', label: 'Marketing', icon: Megaphone, adminOnly: true },
 ]
 
-export const secondaryNavigation: NavItem[] = [{ to: '/configuracoes', label: 'Configurações', icon: Settings }]
+export const secondaryNavigation: NavItem[] = [
+  { to: '/acessos', label: 'Acessos', icon: UsersRound, adminOnly: true },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings },
+]
 
 /** Metadados de rota usados pelo cabeçalho (título e breadcrumbs). */
 export type RouteHandle = {

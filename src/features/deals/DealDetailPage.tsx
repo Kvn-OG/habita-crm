@@ -191,7 +191,7 @@ export function DealDetailPage() {
             </div>
           ) : (
             <p className="flex items-center gap-1.5 text-xs text-muted">
-              <Lock className="size-3.5" aria-hidden="true" /> Somente o corretor responsável, o autor da negociação ou gestores podem alterá-la.
+              <Lock className="size-3.5" aria-hidden="true" /> Somente o corretor responsável, o autor da negociação ou administradores podem alterá-la.
             </p>
           )}
         </CardBody>

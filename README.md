@@ -145,7 +145,7 @@ Nenhum usuário, senha ou chave administrativa fica no código. O primeiro admin
    O SQL Editor roda com privilégios administrativos, por isso a trava de alteração de papéis não se aplica nele.
 4. Entre no CRM com essa conta.
 
-**Demais usuários:** crie direto no Habita, em *Configurações → Equipe → Novo acesso* (somente administradores), com uma **senha provisória** (sem depender de e-mail). Na mesma tela é possível **redefinir a senha** de um membro. Quem recebe uma senha provisória vê um aviso para trocá-la no primeiro acesso.
+**Demais usuários:** crie direto no Habita, em *Acessos → Novo acesso* (somente administradores), com uma **senha provisória** (sem depender de e-mail). Na mesma tela é possível **redefinir a senha**, desativar ou **excluir** o acesso de um membro (os registros da pessoa continuam no CRM, sem responsável). Quem recebe uma senha provisória vê um aviso para trocá-la no primeiro acesso.
 
 Essas ações rodam na função de servidor `api/admin/users.ts` (Vercel Function), que usa a chave `SUPABASE_SERVICE_ROLE_KEY` disponível **apenas no servidor da Vercel** (criada pela integração Supabase ↔ Vercel) e confere, a cada pedido, se quem chama é um administrador ativo. Em desenvolvimento local (`npm run dev`) essa função não roda; use `npx vercel dev` para testá-la no computador.
 
@@ -170,18 +170,18 @@ Essas ações rodam na função de servidor `api/admin/users.ts` (Vercel Functio
 - **Contas nascem inativas:** todas as políticas exigem `is_active_member()`. Um usuário autenticado mas inativo vê apenas o próprio perfil e uma tela de "acesso pendente".
 - **Papéis:**
 
-| Ação | Corretor | Gestor | Administrador |
-|---|:-:|:-:|:-:|
-| Ver imóveis, contatos, leads e agenda | ✔ | ✔ | ✔ |
-| Cadastrar imóveis, contatos, leads e compromissos | ✔ | ✔ | ✔ |
-| Editar imóveis e contatos | ✔ | ✔ | ✔ |
-| Editar/mover leads e compromissos | os seus*, os sem responsável | todos | todos |
-| Excluir imóveis, contatos e leads | — | ✔ | ✔ |
-| Excluir fotos e atividades | as próprias | todas | todas |
-| Liberar acessos e alterar papéis | — | — | ✔ |
-| Configurar etapas dos funis | — | — | ✔ |
+| Ação | Corretor | Administrador |
+|---|:-:|:-:|
+| Ver imóveis | ✔ todos | ✔ todos |
+| Ver contatos, leads, negociações, agenda e histórico | os seus* | todos |
+| Cadastrar imóveis, contatos, leads e compromissos | ✔ | ✔ |
+| Editar/mover leads, negociações e compromissos | os seus* | todos |
+| Excluir imóveis, contatos e leads | — | ✔ |
+| Excluir fotos e atividades | as próprias | todas |
+| Relatórios e Marketing | — | ✔ |
+| Acessos (criar, liberar, excluir) e funis | — | ✔ |
 
-  \* responsável ou autor do registro.
+  \* sob sua responsabilidade ou cadastrados por ele. O código do imóvel é gerado pelo banco e não pode ser alterado.
 
 - **Proteção contra escalonamento:** o trigger `guard_profile_update` impede que alguém altere o próprio papel ou status, e que não administradores alterem os de outros. Isso também garante que sempre reste um administrador ativo.
 - **Autoria confiável:** `created_by` é preenchido pelo banco com `auth.uid()` e não pode ser forjado nem alterado.
@@ -209,6 +209,8 @@ src/
     leads/        leads: lista, funil kanban, detalhes e histórico de atividades
     calendar/     agenda de visitas e reuniões
     settings/     perfil, equipe e funis
+    access/       página Acessos (equipe)
+    marketing/    landing pages e campanhas de tráfego pago
     deals/        negociações: lista, detalhes, propostas e fechamento
     reports/      relatórios por período e exportação em planilha
     search/       busca global
@@ -226,11 +228,15 @@ supabase/
 ## Módulos da versão inicial
 
 - **Visão geral:** seis indicadores calculados no banco (`dashboard_metrics`), próximos compromissos e tarefas, leads com retorno atrasado ou nos próximos 7 dias, atividades recentes, gráfico de leads por etapa e ações rápidas. Sem registros, mostra estados vazios explicativos e nenhum dado fictício.
-- **Imóveis:** listagem com busca (código, título, endereço, bairro, cidade), filtros por finalidade, tipo e situação, paginação e visualização em cartões no celular. O cadastro e a edição cobrem todos os campos, com máscara de moeda e CEP, busca de endereço por CEP (ViaCEP), proprietários vinculados a contatos e fotos com capa. Há página de detalhes com leads interessados e exclusão com confirmação (gestores).
+- **Imóveis:** listagem com busca (código, título, endereço, bairro, cidade), filtros por finalidade, tipo e situação, paginação e visualização em cartões no celular. O cadastro e a edição cobrem todos os campos, com máscara de moeda e CEP, busca de endereço por CEP (ViaCEP), proprietários vinculados a contatos e fotos com capa. Há página de detalhes com leads interessados e exclusão com confirmação (administradores).
 - **Contatos:** busca por nome, telefone ou e-mail, filtro por tipo, cadastro e edição em modal, **alerta de duplicidade** (telefone, WhatsApp ou e-mail) com link para o cadastro existente, e página de detalhes com leads, imóveis como proprietário e histórico.
 - **Leads:** lista com filtros (finalidade, etapa, situação, origem, responsável) e **funil Kanban** por arrastar e soltar, mais o menu "Mover para", acessível por teclado e no celular. O formulário associa contato (com cadastro rápido), responsável, orçamento, região, próximo retorno e imóveis de interesse. Na página de detalhes as etapas são clicáveis, e o histórico registra automaticamente a criação, as mudanças de etapa e as visitas, além das atividades manuais.
 - **Agenda:** agendamento de visitas e reuniões (lead, imóvel, responsável, duração), lista agrupada por dia e ações para marcar como realizado, editar ou cancelar.
-- **Configurações:** perfil e troca de senha, gestão da equipe (liberar e desativar acesso, papéis) e configuração dos funis no banco (renomear, categoria, ativar ou desativar, reordenar, adicionar etapas).
+- **Configurações:** perfil e troca de senha e, para administradores, configuração dos funis no banco (renomear, categoria, ativar ou desativar, reordenar, adicionar etapas).
+- **Acessos (administradores):** criar acessos com senha provisória, mudar papéis, redefinir senha, desativar e excluir.
+- **Marketing (administradores):**
+  - **Landing Pages:** até 5 páginas criadas fora do CRM (ex.: Minha Casa, Minha Vida, usados, lançamentos), cada uma com propósito, funil e corretor padrão. O formulário da página envia os leads para `POST /api/public/lead` com o identificador (token) dela; o lead entra na primeira etapa do funil com origem "Landing page", reaproveitando o contato pelo telefone e sem duplicar leads em andamento. O CRM mostra o HTML pronto do formulário (com campo-armadilha contra robôs e repasse dos parâmetros `utm_*`).
+  - **Campanhas:** campanhas de tráfego pago (Meta Ads, Google Ads, TikTok Ads…) com situação, período, orçamento, valor investido, impressões e cliques. Os leads com `utm_campaign` igual ao identificador da campanha ficam ligados a ela, e a lista mostra leads, custo por lead, CTR e negócios ganhos.
 - **Busca global:** pelo campo do cabeçalho (atalho `Ctrl+K`), em imóveis, contatos e leads.
 - **Negociações:** abertas a partir de um lead em andamento (pela lista ou pela página do lead), com imóvel, valor, previsão de fechamento e responsável. Propostas e contrapropostas têm valor, validade, condições e situação, e a proposta aceita define o valor da negociação. Ao marcar como ganha, o imóvel fica vendido ou alugado e o lead vai para a etapa de conclusão. Ao perder (com motivo) ou cancelar, o imóvel volta a ficar disponível se não houver outra negociação em andamento. Tudo fica registrado no histórico do lead.
 - **Relatórios:** filtro por período (predefinido ou personalizado) e por funil. Mostram o resumo do período, o funil de conversão pelas etapas percorridas, os leads por origem, os fechamentos por mês, o desempenho por corretor, o tempo médio em cada etapa e os motivos de perda, com exportação em planilha (CSV para Excel).

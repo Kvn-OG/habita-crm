@@ -188,7 +188,7 @@ export async function deleteActivity(id: string) {
   if (count === 0) throw new Error('Você só pode excluir atividades registradas por você.')
 }
 
-/** Apaga todo o histórico de um lead ou contato (permitido a gestores e administradores pelo RLS). */
+/** Apaga todo o histórico de um lead ou contato (permitido a administradores pelo RLS). */
 export async function deleteAllActivities(scope: 'lead' | 'contact', id: string) {
   const { error, count } = await getSupabase()
     .from('activities')

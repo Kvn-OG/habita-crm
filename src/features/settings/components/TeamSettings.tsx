@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Info, KeyRound, UserCheck, UserPlus, UserX } from 'lucide-react'
+import { KeyRound, Trash2, UserCheck, UserPlus, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 import { ErrorState } from '@/components/feedback/ErrorState'
@@ -16,6 +16,7 @@ import { getErrorMessage } from '@/lib/errors'
 import { formatDate } from '@/lib/format'
 import { roleLabels, toOptions } from '@/lib/labels'
 import type { AppRole, Profile } from '@/types/domain'
+import { deleteAccess } from '../accessApi'
 import { listProfiles, settingsKeys, updateMemberAccess } from '../api'
 import { CreateAccessModal, ResetPasswordModal } from './AccessModals'
 
@@ -26,6 +27,7 @@ export function TeamSettings() {
   const [toDeactivate, setToDeactivate] = useState<Profile | null>(null)
   const [creating, setCreating] = useState(false)
   const [resetting, setResetting] = useState<Profile | null>(null)
+  const [toDelete, setToDelete] = useState<Profile | null>(null)
   const query = useQuery({ queryKey: settingsKeys.profiles, queryFn: listProfiles })
 
   const update = useMutation({
@@ -41,16 +43,23 @@ export function TeamSettings() {
     onError: (error) => toast.error('Não foi possível atualizar o acesso', getErrorMessage(error)),
   })
 
+  const remove = useMutation({
+    mutationFn: (member: Profile) => deleteAccess(member.id),
+    onSuccess: async (_data, member) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: settingsKeys.profiles }),
+        queryClient.invalidateQueries({ queryKey: teamMembersKey }),
+      ])
+      setToDelete(null)
+      toast.success('Acesso excluído.', member.full_name || member.email)
+    },
+    onError: (error) => toast.error('Não foi possível excluir o acesso', getErrorMessage(error)),
+  })
+
   const pending = (query.data ?? []).filter((member) => !member.is_active)
 
   return (
     <div className="space-y-5">
-      {!permissions.canManageSettings && (
-        <p className="flex items-center gap-2 text-xs text-muted">
-          <Info className="size-3.5" aria-hidden="true" /> Somente administradores podem alterar papéis e liberar acessos.
-        </p>
-      )}
-
       <Card>
         <CardHeader
           title="Equipe"
@@ -88,7 +97,7 @@ export function TeamSettings() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 sm:shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                     {editable ? (
                       <>
                         <div className="w-40">
@@ -118,6 +127,9 @@ export function TeamSettings() {
                             Liberar acesso
                           </Button>
                         )}
+                        <Button size="sm" variant="danger-ghost" icon={<Trash2 />} onClick={() => setToDelete(member)}>
+                          Excluir
+                        </Button>
                       </>
                     ) : (
                       <Badge tone={member.role === 'admin' ? 'accent' : 'neutral'}>{roleLabels[member.role]}</Badge>
@@ -144,6 +156,19 @@ export function TeamSettings() {
         loading={update.isPending}
         onConfirm={() => toDeactivate && update.mutate({ id: toDeactivate.id, patch: { is_active: false } })}
         onCancel={() => setToDeactivate(null)}
+      />
+      <ConfirmDialog
+        open={toDelete !== null}
+        title="Excluir acesso?"
+        description={
+          <>
+            O acesso de <strong className="text-ink">{toDelete?.full_name || toDelete?.email}</strong> será excluído definitivamente e a pessoa não conseguirá mais entrar. Os leads, contatos e negociações dela continuam no CRM, sem corretor responsável, para você redistribuir. Se for algo temporário, prefira desativar.
+          </>
+        }
+        confirmLabel="Excluir acesso"
+        loading={remove.isPending}
+        onConfirm={() => toDelete && remove.mutate(toDelete)}
+        onCancel={() => setToDelete(null)}
       />
     </div>
   )

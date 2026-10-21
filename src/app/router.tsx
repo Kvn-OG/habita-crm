@@ -112,6 +112,16 @@ export const router = createBrowserRouter([
                 lazy: () => import('@/features/reports/ReportsPage').then((m) => ({ Component: m.ReportsPage })),
               },
               {
+                path: 'marketing',
+                handle: handle('Marketing'),
+                lazy: () => import('@/features/marketing/MarketingPage').then((m) => ({ Component: m.MarketingPage })),
+              },
+              {
+                path: 'acessos',
+                handle: handle('Acessos'),
+                lazy: () => import('@/features/access/AccessPage').then((m) => ({ Component: m.AccessPage })),
+              },
+              {
                 path: 'configuracoes',
                 handle: handle('Configurações'),
                 lazy: () => import('@/features/settings/SettingsPage').then((m) => ({ Component: m.SettingsPage })),

@@ -231,7 +231,7 @@ function LossReasons({ data }: { data: ReportData }) {
 // Página
 // ---------------------------------------------------------------------------
 
-/** Relatórios são exclusivos de administradores e gestores. */
+/** Relatórios são exclusivos de administradores. */
 export function ReportsPage() {
   const { permissions } = useAuth()
   return permissions.canViewReports ? <ReportsContent /> : <Navigate to="/" replace />

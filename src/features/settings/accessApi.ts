@@ -41,6 +41,11 @@ export function resetMemberPassword(userId: string, password: string) {
   return callAdmin({ action: 'reset_password', user_id: userId, password })
 }
 
+/** Exclui o acesso; leads, contatos e demais registros da pessoa continuam no CRM. */
+export function deleteAccess(userId: string) {
+  return callAdmin({ action: 'delete', user_id: userId })
+}
+
 /** Senha provisória forte e fácil de ditar (sem caracteres ambíguos como 0/O, 1/l). */
 export function generateTemporaryPassword() {
   const letters = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ'

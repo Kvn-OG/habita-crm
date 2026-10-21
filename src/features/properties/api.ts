@@ -186,7 +186,7 @@ export async function deletePropertyImage(image: PropertyImage) {
   if (storageError) throw storageError
   const { error, count } = await supabase.from('property_images').delete({ count: 'exact' }).eq('id', image.id)
   if (error) throw error
-  if (count === 0) throw new Error('Você só pode excluir fotos que enviou. Gestores podem excluir qualquer foto.')
+  if (count === 0) throw new Error('Você só pode excluir fotos que enviou. Administradores podem excluir qualquer foto.')
 }
 
 /** Define a foto de capa (posição 0) reordenando as demais. */

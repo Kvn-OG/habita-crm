@@ -18,7 +18,7 @@ import { ProposalFormModal } from './ProposalFormModal'
 
 type ProposalListProps = {
   dealId: string
-  /** Pode registrar e alterar propostas (responsável, autor ou gestor). */
+  /** Pode registrar e alterar propostas (responsável, autor ou administrador). */
   canEdit: boolean
   /** Negociação encerrada: apenas consulta. */
   closed: boolean

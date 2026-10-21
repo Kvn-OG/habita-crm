@@ -314,7 +314,7 @@ declare
 begin
   select pg_get_functiondef('public.report_metrics(timestamptz, timestamptz, public.pipeline_type)'::regprocedure)
     into v_def;
-  if v_def not like '%Apenas administradores e gestores%' then
+  if v_def not like '%report_metrics_data%' then
     alter function public.report_metrics(timestamptz, timestamptz, public.pipeline_type) rename to report_metrics_data;
     revoke execute on function public.report_metrics_data(timestamptz, timestamptz, public.pipeline_type) from public, anon, authenticated;
   end if;

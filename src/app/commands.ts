@@ -1,6 +1,6 @@
 import {
   Building2, CalendarDays, CalendarPlus, ChartColumn, Columns3, ContactRound, Handshake, House, KeyRound,
-  LayoutDashboard, Settings, Target, UserPlus, UserRound, UsersRound, Workflow, type LucideIcon,
+  LayoutDashboard, Megaphone, Settings, Target, UserPlus, UserRound, UsersRound, Workflow, type LucideIcon,
 } from 'lucide-react'
 
 export type CommandGroup = 'acao' | 'atalho' | 'pagina'
@@ -16,8 +16,8 @@ export type Command = {
   keywords: string[]
   /** Pode ser escolhido como ação rápida no painel. */
   quick?: boolean
-  /** Visível apenas para administradores e gestores. */
-  managerOnly?: boolean
+  /** Visível apenas para administradores. */
+  adminOnly?: boolean
 }
 
 const CREATE = ['cadastrar', 'cadastro', 'novo', 'nova', 'adicionar', 'criar', 'incluir', 'registrar']
@@ -37,8 +37,8 @@ export const commands: Command[] = [
   { id: 'imoveis-locacao', group: 'atalho', quick: true, label: 'Imóveis para locação', description: 'Carteira de aluguel', to: '/imoveis?finalidade=locacao', icon: KeyRound, keywords: ['imoveis', 'locacao', 'aluguel', 'alugar'] },
   { id: 'proximas-visitas', group: 'atalho', quick: true, label: 'Próximas visitas', description: 'Compromissos agendados', to: '/agenda', icon: CalendarDays, keywords: ['agenda', 'visitas', 'compromissos', 'proximas'] },
   { id: 'meu-perfil', group: 'atalho', label: 'Meu perfil', description: 'Dados pessoais e senha', to: '/configuracoes?aba=perfil', icon: UserRound, keywords: ['perfil', 'senha', 'alterar', 'conta', 'trocar'] },
-  { id: 'equipe', group: 'atalho', managerOnly: true, label: 'Equipe e acessos', description: 'Liberar usuários e papéis', to: '/configuracoes?aba=equipe', icon: UsersRound, keywords: ['equipe', 'usuarios', 'acesso', 'liberar', 'corretores', 'permissoes'] },
-  { id: 'config-funis', group: 'atalho', managerOnly: true, label: 'Configurar funis', description: 'Etapas de venda e locação', to: '/configuracoes?aba=funis', icon: Workflow, keywords: ['configurar', 'funis', 'etapas', 'pipeline'] },
+  { id: 'equipe', group: 'atalho', adminOnly: true, label: 'Equipe e acessos', description: 'Criar, liberar e excluir acessos', to: '/acessos', icon: UsersRound, keywords: ['equipe', 'usuarios', 'acesso', 'liberar', 'corretores', 'permissoes'] },
+  { id: 'config-funis', group: 'atalho', adminOnly: true, label: 'Configurar funis', description: 'Etapas de venda e locação', to: '/configuracoes?aba=funis', icon: Workflow, keywords: ['configurar', 'funis', 'etapas', 'pipeline'] },
 
   { id: 'pagina-visao-geral', group: 'pagina', label: 'Visão geral', description: 'Painel de indicadores', to: '/', icon: LayoutDashboard, keywords: ['inicio', 'painel', 'dashboard', 'visao', 'geral', 'home'] },
   { id: 'pagina-leads', group: 'pagina', label: 'Leads', description: 'Oportunidades comerciais', to: '/leads', icon: Target, keywords: ['leads', 'oportunidades'] },
@@ -46,8 +46,9 @@ export const commands: Command[] = [
   { id: 'pagina-contatos', group: 'pagina', label: 'Contatos', description: 'Clientes e proprietários', to: '/contatos', icon: ContactRound, keywords: ['contatos', 'clientes'] },
   { id: 'pagina-agenda', group: 'pagina', label: 'Agenda', description: 'Visitas e reuniões', to: '/agenda', icon: CalendarDays, keywords: ['agenda', 'calendario'] },
   { id: 'pagina-negociacoes', group: 'pagina', label: 'Negociações', description: 'Propostas e fechamentos', to: '/negociacoes', icon: Handshake, keywords: ['negociacoes', 'propostas', 'fechamentos'] },
-  { id: 'pagina-relatorios', group: 'pagina', managerOnly: true, label: 'Relatórios', description: 'Desempenho e conversão', to: '/relatorios', icon: ChartColumn, keywords: ['relatorios', 'indicadores', 'desempenho', 'conversao', 'planilha'] },
-  { id: 'pagina-configuracoes', group: 'pagina', label: 'Configurações', description: 'Perfil, equipe e funis', to: '/configuracoes', icon: Settings, keywords: ['configuracoes', 'ajustes', 'preferencias'] },
+  { id: 'pagina-relatorios', group: 'pagina', adminOnly: true, label: 'Relatórios', description: 'Desempenho e conversão', to: '/relatorios', icon: ChartColumn, keywords: ['relatorios', 'indicadores', 'desempenho', 'conversao', 'planilha'] },
+  { id: 'pagina-marketing', group: 'pagina', adminOnly: true, label: 'Marketing', description: 'Landing pages e campanhas', to: '/marketing', icon: Megaphone, keywords: ['marketing', 'landing', 'pages', 'campanhas', 'anuncios', 'trafego', 'pago', 'meta', 'google', 'ads'] },
+  { id: 'pagina-configuracoes', group: 'pagina', label: 'Configurações', description: 'Perfil e funis', to: '/configuracoes', icon: Settings, keywords: ['configuracoes', 'ajustes', 'preferencias'] },
 ]
 
 export const DEFAULT_QUICK_ACTIONS = ['novo-imovel', 'novo-contato', 'novo-lead', 'agendar-visita']
@@ -66,14 +67,14 @@ export function normalizeText(value: string) {
 /**
  * Encontra comandos cujo título ou palavras-chave começam com cada termo digitado
  * (sem diferenciar acentos). Ex.: "cadastrar" → todas as opções de cadastro.
- * Com isManager = false, opções exclusivas de administradores e gestores ficam de fora.
+ * Com isAdmin = false, opções exclusivas de administradores ficam de fora.
  */
-export function searchCommands(query: string, limit = 8, isManager = true): Command[] {
+export function searchCommands(query: string, limit = 8, isAdmin = true): Command[] {
   const tokens = normalizeText(query).split(/\s+/).filter((token) => token.length >= 2)
   if (tokens.length === 0) return []
 
   const scored = commands
-    .filter((command) => isManager || !command.managerOnly)
+    .filter((command) => isAdmin || !command.adminOnly)
     .map((command) => {
       const labelWords = normalizeText(command.label).split(/\s+/)
       const words = [...labelWords, ...command.keywords]

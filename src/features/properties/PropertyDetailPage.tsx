@@ -14,7 +14,7 @@ import { DetailItem, DetailList } from '@/components/ui/DetailList'
 import { LoadingScreen, Spinner } from '@/components/ui/Feedback'
 import { LeadStageBadge } from '@/features/leads/components/LeadBadges'
 import { getErrorMessage } from '@/lib/errors'
-import { formatArea, formatCep, formatCurrency, formatDate, formatNumber, formatPhone } from '@/lib/format'
+import { formatArea, formatCurrency, formatDate, formatNumber, formatPhone } from '@/lib/format'
 import { pipelineLabels, propertyTypeLabels } from '@/lib/labels'
 import { deleteProperty, getProperty, listPropertyInterestedLeads, propertyKeys } from './api'
 import { PropertyImagesManager } from './components/PropertyImagesManager'
@@ -68,7 +68,6 @@ export function PropertyDetailPage() {
   }
 
   const property = query.data
-  const street = [property.street, property.street_number].filter(Boolean).join(', ')
 
   return (
     <div className="space-y-5">
@@ -139,11 +138,9 @@ export function PropertyDetailPage() {
             <CardHeader title="Localização" />
             <CardBody>
               <DetailList columns={3}>
-                <DetailItem label="Endereço" className="sm:col-span-2">{street}</DetailItem>
-                <DetailItem label="Complemento">{property.complement}</DetailItem>
+                <DetailItem label="Estado">{property.state}</DetailItem>
+                <DetailItem label="Cidade">{property.city}</DetailItem>
                 <DetailItem label="Bairro">{property.neighborhood}</DetailItem>
-                <DetailItem label="Cidade / UF">{[property.city, property.state].filter(Boolean).join(' / ')}</DetailItem>
-                <DetailItem label="CEP">{formatCep(property.postal_code)}</DetailItem>
               </DetailList>
             </CardBody>
           </Card>

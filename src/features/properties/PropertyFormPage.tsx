@@ -23,13 +23,14 @@ export function NewPropertyPage() {
       <PropertyForm
         defaultValues={emptyPropertyValues}
         defaultOwners={[]}
+        code={null}
         submitLabel="Cadastrar imóvel"
         onCancel={() => navigate('/imoveis')}
         photos={<PendingImagesPicker files={files} onChange={setFiles} onError={(message) => toast.error('Arquivo inválido', message)} />}
         onSubmit={async (values, ownerIds) => {
-          const id = await createProperty(values, ownerIds)
+          const { id, code } = await createProperty(values, ownerIds)
           await queryClient.invalidateQueries({ queryKey: propertyKeys.all })
-          toast.success('Imóvel cadastrado.', `${values.code.toUpperCase()} · ${values.title}`)
+          toast.success('Imóvel cadastrado.', `${code} · ${values.title}`)
           if (files.length) {
             const { uploaded, errors } = await uploadPropertyImages(id, files, 0)
             if (uploaded) toast.success(`${uploaded} foto(s) enviada(s).`)
@@ -63,6 +64,7 @@ export function EditPropertyPage() {
     <div className="mx-auto max-w-6xl">
       <PropertyForm
         propertyId={property.id}
+        code={property.code}
         defaultValues={propertyToFormValues(property)}
         defaultOwners={property.owners.map((owner) => ({ id: owner.id, label: owner.full_name, description: formatPhone(owner.phone) }))}
         submitLabel="Salvar alterações"
@@ -75,7 +77,7 @@ export function EditPropertyPage() {
         onSubmit={async (values, ownerIds) => {
           await updateProperty(property.id, values, ownerIds)
           await queryClient.invalidateQueries({ queryKey: propertyKeys.all })
-          toast.success('Imóvel atualizado.', `${values.code.toUpperCase()} · ${values.title}`)
+          toast.success('Imóvel atualizado.', `${property.code} · ${values.title}`)
           navigate(`/imoveis/${property.id}`)
         }}
       />

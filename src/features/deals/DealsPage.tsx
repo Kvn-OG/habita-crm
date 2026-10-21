@@ -95,7 +95,7 @@ const columns: Column<DealOverview>[] = [
 
 export function DealsPage() {
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const { profile, permissions } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const { values, page, set, hasFilters } = useListParams(FILTER_KEYS)
   const [term, setTerm] = useState(values.q)
@@ -160,7 +160,10 @@ export function DealsPage() {
               ]}
             />
             <FilterSelect label="Filtrar por tipo" allLabel="Venda e locação" value={values.tipo} onChange={(tipo) => set({ tipo })} options={toOptions(pipelineLabels)} />
-            <FilterSelect label="Filtrar por responsável" allLabel="Toda a equipe" value={values.responsavel} onChange={(responsavel) => set({ responsavel })} options={ownerOptions} />
+            {/* Corretores só enxergam a própria carteira: o filtro por responsável é da gestão. */}
+            {permissions.canViewReports && (
+              <FilterSelect label="Filtrar por responsável" allLabel="Toda a equipe" value={values.responsavel} onChange={(responsavel) => set({ responsavel })} options={ownerOptions} />
+            )}
             {hasFilters && (
               <Button variant="ghost" onClick={clearFilters}>
                 Limpar

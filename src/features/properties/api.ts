@@ -22,7 +22,7 @@ export const propertyKeys = {
 }
 
 const LIST_COLUMNS =
-  'id,code,title,property_type,purpose,status,neighborhood,city,street,street_number,sale_price,rent_price,bedrooms,built_area,created_at'
+  'id,code,title,property_type,purpose,status,neighborhood,city,state,sale_price,rent_price,bedrooms,built_area,created_at'
 
 export async function listProperties(filters: PropertyFilters, page: number): Promise<Paginated<PropertyListItem>> {
   let query = getSupabase().from('properties').select(LIST_COLUMNS, { count: 'exact' })
@@ -31,7 +31,7 @@ export async function listProperties(filters: PropertyFilters, page: number): Pr
   if (term) {
     const pattern = `%${term}%`
     query = query.or(
-      `code.ilike.${pattern},title.ilike.${pattern},street.ilike.${pattern},neighborhood.ilike.${pattern},city.ilike.${pattern}`,
+      `code.ilike.${pattern},title.ilike.${pattern},neighborhood.ilike.${pattern},city.ilike.${pattern}`,
     )
   }
   if (filters.finalidade) {
@@ -71,13 +71,14 @@ export async function getProperty(id: string): Promise<PropertyDetail> {
   return { ...property, owners, creator_name: creator?.full_name || null }
 }
 
+/** Cadastra o imóvel; o código (IM-0001…) é gerado pelo banco e devolvido. */
 export async function createProperty(values: PropertyFormValues, ownerContactIds: string[]) {
   const supabase = getSupabase()
-  const { data, error } = await supabase.from('properties').insert(toPropertyPayload(values)).select('id').single()
+  const { data, error } = await supabase.from('properties').insert(toPropertyPayload(values)).select('id,code').single()
   if (error) throw error
-  const id = (data as { id: string }).id
-  await setPropertyOwners(id, ownerContactIds)
-  return id
+  const created = data as { id: string; code: string }
+  await setPropertyOwners(created.id, ownerContactIds)
+  return created
 }
 
 export async function updateProperty(id: string, values: PropertyFormValues, ownerContactIds: string[]) {
@@ -243,7 +244,7 @@ export async function searchPropertyOptions(term: string): Promise<PickerOption[
 
 export const PROPERTY_CODE_PREFIX = 'IM-'
 
-/** Próximo código sequencial (IM-0001, IM-0002…) a partir dos códigos existentes. */
+/** Próximo código sequencial (IM-0001, IM-0002…), mesma regra usada pelo banco ao cadastrar. */
 export function nextPropertyCode(existing: string[]) {
   const pattern = new RegExp(`^${PROPERTY_CODE_PREFIX}(\\d+)$`)
   const max = existing.reduce((highest, code) => {
@@ -253,6 +254,7 @@ export function nextPropertyCode(existing: string[]) {
   return `${PROPERTY_CODE_PREFIX}${String(max + 1).padStart(4, '0')}`
 }
 
+/** Prévia do código exibida no cadastro; o valor final é definido pelo banco ao salvar. */
 export async function suggestPropertyCode() {
   const { data, error } = await getSupabase()
     .from('properties')
@@ -260,36 +262,4 @@ export async function suggestPropertyCode() {
     .filter('code', 'match', `^${PROPERTY_CODE_PREFIX}[0-9]+$`)
   if (error) throw error
   return nextPropertyCode(((data ?? []) as { code: string }[]).map((row) => row.code))
-}
-
-export async function isPropertyCodeTaken(code: string, excludeId?: string) {
-  let query = getSupabase().from('properties').select('id').eq('code', code.trim().toUpperCase()).limit(1)
-  if (excludeId) query = query.neq('id', excludeId)
-  const { data, error } = await query
-  if (error) throw error
-  return (data ?? []).length > 0
-}
-
-export type CepResult = { street: string; neighborhood: string; city: string; state: string }
-
-/** Consulta pública ao ViaCEP para preencher o endereço. */
-export async function lookupCep(cep: string): Promise<CepResult | null> {
-  const digits = cep.replace(/\D/g, '')
-  if (digits.length !== 8) return null
-  const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
-  if (!response.ok) throw new Error('Não foi possível consultar o CEP agora.')
-  const data = (await response.json()) as {
-    erro?: boolean | string
-    logradouro?: string
-    bairro?: string
-    localidade?: string
-    uf?: string
-  }
-  if (data.erro) return null
-  return {
-    street: data.logradouro ?? '',
-    neighborhood: data.bairro ?? '',
-    city: data.localidade ?? '',
-    state: data.uf ?? '',
-  }
 }

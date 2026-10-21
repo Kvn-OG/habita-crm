@@ -98,7 +98,8 @@ function PanelLoading() {
 }
 
 export function DashboardPage() {
-  const { profile } = useAuth()
+  const { profile, permissions } = useAuth()
+  const teamView = permissions.canViewReports
   const [pipeline, setPipeline] = useState<Pipeline>('venda')
   const metrics = useQuery({ queryKey: dashboardKeys.metrics, queryFn: fetchMetrics })
   const agenda = useQuery({ queryKey: dashboardKeys.agenda, queryFn: fetchAgenda })
@@ -129,7 +130,11 @@ export function DashboardPage() {
             {greeting}
             {firstName ? `, ${firstName}` : ''}
           </h2>
-          <p className="mt-1 text-[13px] text-muted">Resumo da operação comercial calculado a partir dos registros do CRM.</p>
+          <p className="mt-1 text-[13px] text-muted">
+            {teamView
+              ? 'Resumo da operação comercial calculado a partir dos registros do CRM.'
+              : 'Resumo da sua carteira: seus leads, visitas e negociações, e os imóveis da imobiliária.'}
+          </p>
         </div>
         <p className="text-xs text-muted">{formatLongDate()}</p>
       </div>
@@ -155,7 +160,7 @@ export function DashboardPage() {
             <div className="flex-1">
               <h3 className="text-[15px] font-semibold text-ink">O Habita está pronto para começar</h3>
               <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted">
-                Ainda não há registros. Os indicadores acima serão atualizados automaticamente conforme a equipe cadastrar imóveis, contatos, leads e visitas. Nenhum dado demonstrativo é exibido.
+                Ainda não há registros. Os indicadores acima serão atualizados automaticamente conforme {teamView ? 'a equipe cadastrar' : 'você cadastrar'} imóveis, contatos, leads e visitas. Nenhum dado demonstrativo é exibido.
               </p>
             </div>
           </div>
@@ -271,7 +276,7 @@ export function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title="Atividades recentes" description="Últimos registros comerciais da equipe">
+        <Panel title="Atividades recentes" description={teamView ? 'Últimos registros comerciais da equipe' : 'Seus últimos registros comerciais'}>
           {activities.isLoading ? (
             <PanelLoading />
           ) : activities.isError ? (

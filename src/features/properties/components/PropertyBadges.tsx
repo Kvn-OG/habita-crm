@@ -45,7 +45,8 @@ export function PropertyPrice({ property }: { property: Pick<Property, 'purpose'
   )
 }
 
-export function formatAddress(property: Pick<Property, 'street' | 'street_number' | 'neighborhood' | 'city'>, fallback = 'Endereço não informado') {
-  const street = [property.street, property.street_number].filter(Boolean).join(', ')
-  return [street, property.neighborhood, property.city].filter(Boolean).join(' · ') || fallback
+/** Localização resumida: bairro · cidade/UF. */
+export function formatAddress(property: Pick<Property, 'neighborhood' | 'city' | 'state'>, fallback = 'Localização não informada') {
+  const city = [property.city, property.state].filter(Boolean).join('/')
+  return [property.neighborhood, city].filter(Boolean).join(' · ') || fallback
 }

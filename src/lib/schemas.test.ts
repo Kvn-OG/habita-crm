@@ -6,7 +6,6 @@ import { sanitizeSearchTerm } from './utils'
 
 const validProperty = {
   ...emptyPropertyValues,
-  code: 'im-0001',
   title: 'Apartamento 2 quartos',
   property_type: 'apartamento',
   sale_price: 350000,
@@ -20,7 +19,8 @@ describe('imóvel', () => {
   it('aceita um cadastro mínimo válido e normaliza o payload', () => {
     const parsed = propertySchema.parse(validProperty)
     const payload = toPropertyPayload(parsed)
-    expect(payload.code).toBe('IM-0001')
+    expect(payload).not.toHaveProperty('code')
+    expect(payload).not.toHaveProperty('street')
     expect(payload.sale_price).toBe(350000)
     expect(payload.rent_price).toBeNull()
     expect(payload.description).toBeNull()
@@ -32,14 +32,12 @@ describe('imóvel', () => {
     expect(errors.rent_price).toBe('Informe o valor do aluguel.')
   })
 
-  it('valida tipo, código, suítes e CEP', () => {
+  it('valida tipo e suítes', () => {
     const errors = messages(
-      propertySchema.safeParse({ ...validProperty, property_type: '', code: 'DC 01', bedrooms: 1, suites: 2, postal_code: '2914' }),
+      propertySchema.safeParse({ ...validProperty, property_type: '', bedrooms: 1, suites: 2 }),
     )
     expect(errors.property_type).toBe('Selecione o tipo do imóvel.')
-    expect(errors.code).toMatch(/letras, números e hífen/)
     expect(errors.suites).toMatch(/suítes não pode ser maior/)
-    expect(errors.postal_code).toMatch(/CEP válido/)
   })
 
   it('rejeita números inválidos e negativos', () => {

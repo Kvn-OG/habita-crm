@@ -73,7 +73,7 @@ export function AgendaPage() {
   })
 
   const canChange = (appointment: Appointment) =>
-    permissions.isManager || appointment.assigned_to === null || appointment.assigned_to === profile?.id || appointment.created_by === profile?.id
+    permissions.isManager || appointment.assigned_to === profile?.id || appointment.created_by === profile?.id
 
   const emptyText: Record<AgendaView, { title: string; description: string }> = {
     proximos: { title: 'Nenhum compromisso agendado', description: 'Agende visitas e reuniões para organizar os próximos atendimentos.' },

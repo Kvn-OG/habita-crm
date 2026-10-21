@@ -88,7 +88,7 @@ const columns: Column<LeadOverview>[] = [
 
 export function LeadsPage() {
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const { profile, permissions } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const view = searchParams.get('visao') === 'funil' ? 'funil' : 'lista'
   const { values, page, set, hasFilters } = useListParams(FILTER_KEYS)
@@ -213,7 +213,10 @@ export function LeadsPage() {
               </>
             )}
             <FilterSelect label="Filtrar por origem" allLabel="Todas as origens" value={values.origem} onChange={(origem) => set({ origem })} options={toOptions(leadSourceLabels)} />
-            <FilterSelect label="Filtrar por responsável" allLabel="Toda a equipe" value={values.responsavel} onChange={(responsavel) => set({ responsavel })} options={ownerOptions} />
+            {/* Corretores só enxergam a própria carteira: o filtro por responsável é da gestão. */}
+            {permissions.canViewReports && (
+              <FilterSelect label="Filtrar por responsável" allLabel="Toda a equipe" value={values.responsavel} onChange={(responsavel) => set({ responsavel })} options={ownerOptions} />
+            )}
             {listFiltersActive && (
               <Button variant="ghost" onClick={clearFilters}>
                 Limpar

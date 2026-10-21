@@ -25,8 +25,10 @@ export type Permissions = {
   canDelete: boolean
   /** Gestão de equipe e configuração dos funis. */
   canManageSettings: boolean
+  /** Relatórios, dados de toda a equipe e informações administrativas (admin e gestor). */
+  canViewReports: boolean
   canEditLead: (lead: { assigned_to: string | null; created_by: string | null }) => boolean
-  /** Mesmas regras dos leads: gestores, responsável, autor ou qualquer membro se não houver responsável. */
+  /** Mesmas regras dos leads: gestores, responsável ou autor. */
   canEditDeal: (deal: { assigned_to: string | null; created_by: string | null }) => boolean
 }
 
@@ -198,13 +200,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const isAdmin = active && profile?.role === 'admin'
     const isManager = active && (profile?.role === 'admin' || profile?.role === 'gestor')
     const canEditOwned = (record: { assigned_to: string | null; created_by: string | null }) =>
-      isManager ||
-      (active && (record.assigned_to === null || record.assigned_to === profile?.id || record.created_by === profile?.id))
+      isManager || (active && (record.assigned_to === profile?.id || record.created_by === profile?.id))
     return {
       isAdmin,
       isManager,
       canDelete: isManager,
       canManageSettings: isAdmin,
+      canViewReports: isManager,
       canEditLead: canEditOwned,
       canEditDeal: canEditOwned,
     }

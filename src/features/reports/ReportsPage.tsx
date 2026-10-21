@@ -3,6 +3,7 @@ import {
   ChartColumn, Clock, Download, Handshake, Target, Trophy, UsersRound, Wallet, type LucideIcon,
 } from 'lucide-react'
 import { lazy, Suspense, useMemo, type ReactNode } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { ErrorState } from '@/components/feedback/ErrorState'
@@ -230,8 +231,13 @@ function LossReasons({ data }: { data: ReportData }) {
 // Página
 // ---------------------------------------------------------------------------
 
+/** Relatórios são exclusivos de administradores e gestores. */
 export function ReportsPage() {
-  const { profile } = useAuth()
+  const { permissions } = useAuth()
+  return permissions.canViewReports ? <ReportsContent /> : <Navigate to="/" replace />
+}
+
+function ReportsContent() {
   const { values, set } = useListParams(FILTER_KEYS)
   const preset = values.periodo || DEFAULT_PERIOD
   const pipeline: Pipeline | null = values.funil === 'venda' || values.funil === 'locacao' ? values.funil : null
@@ -375,7 +381,6 @@ export function ReportsPage() {
 
           <p className="text-xs leading-relaxed text-subtle">
             O funil e o tempo por etapa usam o histórico de atividades dos leads: registros apagados do histórico deixam de ser considerados.
-            {profile?.role === 'corretor' ? ' Os números consideram toda a equipe.' : ''}
           </p>
         </div>
       )}

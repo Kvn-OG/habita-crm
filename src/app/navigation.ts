@@ -7,6 +7,8 @@ export type NavItem = {
   label: string
   icon: LucideIcon
   end?: boolean
+  /** Visível apenas para administradores e gestores. */
+  managerOnly?: boolean
 }
 
 export const mainNavigation: NavItem[] = [
@@ -16,7 +18,7 @@ export const mainNavigation: NavItem[] = [
   { to: '/contatos', label: 'Contatos', icon: ContactRound },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/negociacoes', label: 'Negociações', icon: Handshake },
-  { to: '/relatorios', label: 'Relatórios', icon: ChartColumn },
+  { to: '/relatorios', label: 'Relatórios', icon: ChartColumn, managerOnly: true },
 ]
 
 export const secondaryNavigation: NavItem[] = [{ to: '/configuracoes', label: 'Configurações', icon: Settings }]

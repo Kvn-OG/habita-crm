@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { searchCommands } from '@/app/commands'
+import { useAuth } from '@/auth/AuthContext'
 import { Building2, ContactRound, Search, Target } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -19,7 +20,7 @@ import { sanitizeSearchTerm } from '@/lib/utils'
 import type { ContactType, Pipeline, PropertyStatus, StageCategory } from '@/types/domain'
 
 type Results = {
-  properties: { id: string; code: string; title: string; status: PropertyStatus; street: string | null; street_number: string | null; neighborhood: string | null; city: string | null }[]
+  properties: { id: string; code: string; title: string; status: PropertyStatus; neighborhood: string | null; city: string | null; state: string | null }[]
   contacts: { id: string; full_name: string; phone: string; contact_type: ContactType }[]
   leads: { id: string; contact_name: string; purpose: Pipeline; stage_name: string; stage_category: StageCategory; desired_region: string | null }[]
 }
@@ -34,8 +35,8 @@ async function searchAll(raw: string): Promise<Results> {
   const [properties, contacts, leads] = await Promise.all([
     supabase
       .from('properties')
-      .select('id,code,title,status,street,street_number,neighborhood,city')
-      .or(`code.ilike.%${term}%,title.ilike.%${term}%,street.ilike.%${term}%,neighborhood.ilike.%${term}%`)
+      .select('id,code,title,status,neighborhood,city,state')
+      .or(`code.ilike.%${term}%,title.ilike.%${term}%,city.ilike.%${term}%,neighborhood.ilike.%${term}%`)
       .limit(8),
     supabase.from('contacts').select('id,full_name,phone,contact_type').or(contactClauses.join(',')).limit(8),
     supabase
@@ -82,7 +83,7 @@ export function SearchPage() {
 
   const query = useQuery({ queryKey: ['search', debounced], queryFn: () => searchAll(debounced), enabled: active })
   const total = query.data ? query.data.properties.length + query.data.contacts.length + query.data.leads.length : 0
-  const shortcuts = searchCommands(term, 8)
+  const shortcuts = searchCommands(term, 8, useAuth().permissions.canViewReports)
 
   return (
     <div className="space-y-5">

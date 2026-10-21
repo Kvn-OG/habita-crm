@@ -54,7 +54,8 @@ type SidebarProps = {
 }
 
 export function Sidebar({ mobileOpen, onClose, collapsed: collapsedPreference }: SidebarProps) {
-  const { profile, user, signOut } = useAuth()
+  const { profile, user, signOut, permissions } = useAuth()
+  const navigation = mainNavigation.filter((item) => !item.managerOnly || permissions.canViewReports)
   const displayName = profile?.full_name.trim() || user?.email || 'Usuário'
   // No celular o menu aberto é sempre completo.
   const collapsed = collapsedPreference && !mobileOpen
@@ -98,7 +99,7 @@ export function Sidebar({ mobileOpen, onClose, collapsed: collapsedPreference }:
         <nav className={cn('flex flex-1 flex-col overflow-y-auto py-5', collapsed ? 'px-2.5' : 'px-3')} aria-label="Navegação principal">
           <p className={cn('mb-2 px-3 text-[10px] font-semibold tracking-[0.12em] text-brand-200/60 uppercase', collapsed && 'sr-only')}>Operação</p>
           <div className="space-y-0.5">
-            {mainNavigation.map((item) => (
+            {navigation.map((item) => (
               <NavEntry key={item.to} item={item} onNavigate={onClose} collapsed={collapsed} />
             ))}
           </div>

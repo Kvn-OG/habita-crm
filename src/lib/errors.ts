@@ -24,9 +24,9 @@ export function isAuthError(error: unknown) {
 }
 
 const constraintMessages: Record<string, string> = {
-  contacts_phone_key: 'Já existe um contato com este telefone.',
-  contacts_email_key: 'Já existe um contato com este e-mail.',
-  properties_code_key: 'Já existe um imóvel com este código. Informe um código único.',
+  contacts_phone_key: 'Já existe um contato com este telefone. Se ele não aparece para você, pode ter sido cadastrado por outro corretor: fale com o administrador.',
+  contacts_email_key: 'Já existe um contato com este e-mail. Se ele não aparece para você, pode ter sido cadastrado por outro corretor: fale com o administrador.',
+  properties_code_key: 'Não foi possível gerar o código do imóvel. Tente salvar novamente.',
   properties_sale_price_required: 'Informe o valor de venda para imóveis à venda.',
   properties_rent_price_required: 'Informe o valor do aluguel para imóveis para locação.',
   properties_suites_le_bedrooms: 'O número de suítes não pode ser maior que o de quartos.',

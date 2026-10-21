@@ -1,26 +1,28 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { MapPinned, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useToast } from '@/components/feedback/Toast'
 import { AsyncPicker, type PickerOption } from '@/components/forms/AsyncPicker'
 import { Field, FormSection, RequiredNote } from '@/components/forms/Field'
 import {
-  CepInput, CurrencyField, DecimalField, integerRegisterOptions, Select, SelectField, TextareaField, TextField,
+  CurrencyField, DecimalField, integerRegisterOptions, Select, SelectField, TextareaField, TextField,
 } from '@/components/forms/inputs'
 import { Button } from '@/components/ui/Button'
 import { getErrorMessage } from '@/lib/errors'
 import { BRAZILIAN_STATES, propertyPurposeLabels, propertyStatusLabels, propertyTypeLabels, toOptions } from '@/lib/labels'
 import { ContactFormModal } from '@/features/contacts/components/ContactFormModal'
 import { contactToOption, searchContactOptions } from '@/features/contacts/api'
-import { isPropertyCodeTaken, lookupCep, suggestPropertyCode } from '../api'
+import { suggestPropertyCode } from '../api'
 import { propertySchema, type PropertyFormValues } from '../schema'
 
 type PropertyFormProps = {
   defaultValues: PropertyFormValues
   defaultOwners: PickerOption[]
   propertyId?: string
+  /** Código do imóvel já cadastrado; no cadastro novo o banco gera ao salvar. */
+  code: string | null
   submitLabel: string
   onSubmit: (values: PropertyFormValues, ownerIds: string[]) => Promise<void>
   onCancel: () => void
@@ -28,71 +30,28 @@ type PropertyFormProps = {
   photos: ReactNode
 }
 
-export function PropertyForm({ defaultValues, defaultOwners, propertyId, submitLabel, onSubmit, onCancel, photos }: PropertyFormProps) {
+export function PropertyForm({ defaultValues, defaultOwners, propertyId, code, submitLabel, onSubmit, onCancel, photos }: PropertyFormProps) {
   const toast = useToast()
   const [owners, setOwners] = useState<PickerOption[]>(defaultOwners)
   const [newOwnerOpen, setNewOwnerOpen] = useState(false)
-  const [cepLoading, setCepLoading] = useState(false)
 
   const {
-    register, control, handleSubmit, setValue, setError, getValues, getFieldState,
+    register, control, handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<PropertyFormValues>({ resolver: zodResolver(propertySchema), defaultValues })
 
   const purpose = useWatch({ control, name: 'purpose' })
   const creating = !propertyId
 
-  // Cadastro novo: sugere o próximo código sequencial (o usuário pode alterar).
-  const codeSuggestion = useQuery({ queryKey: ['property-code-suggestion'], queryFn: suggestPropertyCode, enabled: creating, staleTime: 0 })
-  useEffect(() => {
-    if (codeSuggestion.data && !getFieldState('code').isDirty && !getValues('code')) {
-      setValue('code', codeSuggestion.data, { shouldValidate: false })
-    }
-  }, [codeSuggestion.data, getFieldState, getValues, setValue])
-
-  const searchCep = async () => {
-    const cep = getValues('postal_code')
-    if (cep.replace(/\D/g, '').length !== 8) {
-      setError('postal_code', { message: 'Informe os 8 dígitos do CEP para buscar o endereço.' })
-      return
-    }
-    setCepLoading(true)
-    try {
-      const result = await lookupCep(cep)
-      if (!result) {
-        setError('postal_code', { message: 'CEP não encontrado. Preencha o endereço manualmente.' })
-        return
-      }
-      setValue('street', result.street, { shouldDirty: true })
-      setValue('neighborhood', result.neighborhood, { shouldDirty: true })
-      setValue('city', result.city, { shouldDirty: true })
-      setValue('state', result.state, { shouldDirty: true })
-      toast.info('Endereço preenchido pelo CEP.', 'Confira os dados e informe o número.')
-    } catch (error) {
-      toast.error('Não foi possível consultar o CEP', getErrorMessage(error))
-    } finally {
-      setCepLoading(false)
-    }
-  }
+  // Cadastro novo: mostra o próximo código como prévia (o banco define o valor final ao salvar).
+  const codePreview = useQuery({ queryKey: ['property-code-suggestion'], queryFn: suggestPropertyCode, enabled: creating, staleTime: 0 })
+  const codeValue = code ?? (codePreview.isLoading ? 'Gerando código…' : codePreview.data ?? 'Gerado ao salvar')
 
   const submit = handleSubmit(async (values) => {
     try {
-      if (await isPropertyCodeTaken(values.code, propertyId)) {
-        if (creating) {
-          // Outro usuário pode ter usado o código sugerido nesse meio-tempo.
-          const next = await suggestPropertyCode()
-          setValue('code', next)
-          setError('code', { message: `O código ${values.code.toUpperCase()} já está em uso. Sugerimos ${next}; clique em salvar novamente.` }, { shouldFocus: true })
-        } else {
-          setError('code', { message: 'Este código já está em uso por outro imóvel.' }, { shouldFocus: true })
-        }
-        return
-      }
       await onSubmit(values, owners.map((owner) => owner.id))
     } catch (error) {
-      const message = getErrorMessage(error)
-      if (/código/i.test(message)) setError('code', { message }, { shouldFocus: true })
-      toast.error('Não foi possível salvar o imóvel', message)
+      toast.error('Não foi possível salvar o imóvel', getErrorMessage(error))
     }
   })
 
@@ -103,12 +62,10 @@ export function PropertyForm({ defaultValues, defaultOwners, propertyId, submitL
           <FormSection title="Identificação" description="Dados principais exibidos na listagem.">
             <TextField
               label="Código do imóvel"
-              required
-              placeholder={creating && codeSuggestion.isLoading ? 'Gerando código…' : 'IM-0001'}
-              hint={creating ? 'Gerado automaticamente. Você pode alterar se preferir.' : 'Único na carteira. Letras, números e hífen.'}
-              style={{ textTransform: 'uppercase' }}
-              error={errors.code?.message}
-              {...register('code')}
+              value={codeValue}
+              readOnly
+              className="[&_input]:cursor-default [&_input]:bg-canvas [&_input]:font-medium [&_input]:text-muted"
+              hint={creating ? 'Gerado automaticamente ao salvar. Não pode ser alterado.' : 'Gerado automaticamente. Não pode ser alterado.'}
             />
             <TextField
               label="Título"
@@ -186,23 +143,7 @@ export function PropertyForm({ defaultValues, defaultOwners, propertyId, submitL
             />
           </FormSection>
 
-          <FormSection title="Localização" description="Use a busca por CEP para agilizar o preenchimento.">
-            <Field label="CEP" error={errors.postal_code?.message}>
-              {(fieldProps) => (
-                <div className="flex gap-2">
-                  <Controller
-                    control={control}
-                    name="postal_code"
-                    render={({ field }) => (
-                      <CepInput {...fieldProps} value={field.value} onChange={field.onChange} onBlur={field.onBlur} name={field.name} ref={field.ref} />
-                    )}
-                  />
-                  <Button variant="secondary" onClick={() => void searchCep()} loading={cepLoading} icon={<MapPinned />} aria-label="Buscar endereço pelo CEP">
-                    <span className="hidden sm:inline">Buscar</span>
-                  </Button>
-                </div>
-              )}
-            </Field>
+          <FormSection title="Localização" description="Região do imóvel.">
             <Field label="Estado" error={errors.state?.message}>
               {(fieldProps) => (
                 <Select {...fieldProps} {...register('state')}>
@@ -217,9 +158,6 @@ export function PropertyForm({ defaultValues, defaultOwners, propertyId, submitL
             </Field>
             <TextField label="Cidade" error={errors.city?.message} {...register('city')} />
             <TextField label="Bairro" error={errors.neighborhood?.message} {...register('neighborhood')} />
-            <TextField label="Endereço" placeholder="Rua, avenida…" className="xl:col-span-2" error={errors.street?.message} {...register('street')} />
-            <TextField label="Número" error={errors.street_number?.message} {...register('street_number')} />
-            <TextField label="Complemento" placeholder="Apto, bloco, lote…" error={errors.complement?.message} {...register('complement')} />
           </FormSection>
 
           <FormSection title="Características" description="Áreas em metros quadrados. Use vírgula para decimais.">

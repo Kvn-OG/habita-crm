@@ -14,6 +14,11 @@ describe('pesquisa de comandos', () => {
     expect(searchCommands('funil loca').map((command) => command.id)).toEqual(['funil-locacao'])
     expect(searchCommands('configuracoes').some((command) => command.id === 'pagina-configuracoes')).toBe(true)
   })
+  it('esconde relatórios e configurações da gestão para corretores', () => {
+    expect(searchCommands('relatorios', 8, false)).toEqual([])
+    expect(searchCommands('equipe', 8, false)).toEqual([])
+    expect(searchCommands('relatorios').map((command) => command.id)).toContain('pagina-relatorios')
+  })
   it('não sugere nada para termos curtos ou sem relação', () => {
     expect(searchCommands('a')).toEqual([])
     expect(searchCommands('xyzabc')).toEqual([])

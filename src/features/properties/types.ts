@@ -33,7 +33,7 @@ export type Property = {
 export type PropertyListItem = Pick<
   Property,
   | 'id' | 'code' | 'title' | 'property_type' | 'purpose' | 'status' | 'neighborhood' | 'city'
-  | 'street' | 'street_number' | 'sale_price' | 'rent_price' | 'bedrooms' | 'built_area' | 'created_at'
+  | 'state' | 'sale_price' | 'rent_price' | 'bedrooms' | 'built_area' | 'created_at'
 >
 
 export type PropertyImage = {

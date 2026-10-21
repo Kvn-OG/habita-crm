@@ -1,6 +1,7 @@
 import { CornerDownLeft, Search } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/auth/AuthContext'
 import { commandGroupLabels, commandsByIds, DEFAULT_QUICK_ACTIONS, searchCommands, type Command } from '@/app/commands'
 import { cn } from '@/lib/utils'
 
@@ -32,12 +33,13 @@ export function GlobalSearch() {
   }, [])
 
   const term = value.trim()
+  const isManager = useAuth().permissions.canViewReports
   const items = useMemo<Item[]>(() => {
-    const matches = term ? searchCommands(term, 7) : commandsByIds(DEFAULT_QUICK_ACTIONS)
+    const matches = term ? searchCommands(term, 7, isManager) : commandsByIds(DEFAULT_QUICK_ACTIONS)
     const list: Item[] = matches.map((command) => ({ kind: 'command', command }))
     if (term.length >= 2) list.push({ kind: 'search', term })
     return list
-  }, [term])
+  }, [term, isManager])
 
   const close = () => {
     setOpen(false)
